@@ -163,9 +163,7 @@ public:
   };
 
   // Creates an empty binary tree array list.
-  binary_tree_array_list() : _size(0), _capacity(0) {
-    _data = static_cast<std::optional<T> *>(malloc(0));
-  }
+  binary_tree_array_list() : _data(nullptr), _size(0), _capacity(0) {}
 
   ~binary_tree_array_list() noexcept { free(_data); }
 
