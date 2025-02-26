@@ -25,6 +25,10 @@ gcov: $(TEST)
 	mv *.gcov bin/
 	gcovr --html-details bin/report.html
 
+.PHONY: vg
+vg: $(TEST)
+	valgrind --leak-check=full --track-origins=yes -s -v ./$<
+
 .PHONY: clean
 clean:
 	rm bin/*
