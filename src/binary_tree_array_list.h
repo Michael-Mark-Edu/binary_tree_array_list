@@ -70,9 +70,6 @@ public:
         return &_current->value();
     }
 
-    // Returns a pointer to the current item. May be nullptr.
-    const T *operator*() const noexcept { return get(); }
-
     // Returns the index of the iterator.
     size_t index() const noexcept { return _index; }
 
@@ -140,6 +137,28 @@ public:
       }
       _current = &_list->_data[offset];
       return true;
+    }
+
+    // Returns the value at the iterator's current position. Throws an exception
+    // if called on the past-the-last item. If this behavior is not desired,
+    // then use the get() method instead.
+    T operator*() const { return *get(); }
+
+    // Tests if two iterators are identical.
+    bool operator==(binary_tree_array_list::iterator iter) const noexcept {
+      return _list == iter._list && _current == iter._current;
+    }
+
+    // Tests if two iterators are not identical.
+    bool operator!=(binary_tree_array_list::iterator iter) const noexcept {
+      return _list != iter._list || _current != iter._current;
+    }
+
+    // Moves the iterator to the next item in the list. Returns a reference to
+    // this iterator.
+    binary_tree_array_list::iterator &operator++() noexcept {
+      next();
+      return *this;
     }
   };
 
@@ -230,6 +249,9 @@ public:
   iterator begin_at(size_t index) const noexcept {
     return iterator(this, index);
   }
+
+  // Creates an iterator pointing to the past-the-last item.
+  iterator end() const noexcept { return iterator(this, _size); }
 };
 
 #endif // BINARY_TREE_ARRAY_LIST_H

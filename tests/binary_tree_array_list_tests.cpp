@@ -9,7 +9,7 @@ TEST(binary_tree_array_list_suite, empty_list_test) {
   EXPECT_EQ(list.capacity(), 0);
 
   binary_tree_array_list<int>::iterator iter = list.begin();
-  EXPECT_EQ(*iter, nullptr);
+  EXPECT_EQ(iter.get(), nullptr);
   EXPECT_FALSE(iter.next());
 }
 
@@ -129,7 +129,7 @@ TEST(binary_tree_array_list_suite, insert_in_random_order_test) {
   EXPECT_TRUE(iter.next());
   EXPECT_EQ(*iter.get(), 9);
   EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter, nullptr);
+  EXPECT_EQ(iter.get(), nullptr);
   EXPECT_FALSE(iter.next());
 }
 
@@ -147,6 +147,7 @@ TEST(binary_tree_array_list_suite, indexed_iterator_test) {
   list.insert(7);
 
   binary_tree_array_list<int>::iterator iter = list.begin_at(5);
+
   EXPECT_EQ(*iter.get(), 5);
   EXPECT_TRUE(iter.next());
   EXPECT_EQ(*iter.get(), 6);
@@ -157,7 +158,7 @@ TEST(binary_tree_array_list_suite, indexed_iterator_test) {
   EXPECT_TRUE(iter.next());
   EXPECT_EQ(*iter.get(), 9);
   EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter, nullptr);
+  EXPECT_EQ(iter.get(), nullptr);
   EXPECT_FALSE(iter.next());
 }
 
@@ -196,4 +197,23 @@ TEST(binary_tree_array_list_suite, prev_iterator_test) {
   EXPECT_EQ(*iter.get(), 0);
   EXPECT_FALSE(iter.prev());
   EXPECT_EQ(*iter.get(), 0);
+}
+
+TEST(binary_tree_array_list_suite, range_for_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(5);
+  list.insert(9);
+  list.insert(4);
+  list.insert(0);
+  list.insert(8);
+  list.insert(1);
+  list.insert(2);
+  list.insert(6);
+  list.insert(3);
+  list.insert(7);
+
+  size_t index = 0;
+  for (int item : list) {
+    EXPECT_EQ(item, index++);
+  }
 }
