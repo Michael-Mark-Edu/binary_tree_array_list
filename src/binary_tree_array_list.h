@@ -33,7 +33,7 @@ public:
       size_t offset = 0;
       size_t skip = 1;
       while (list->_capacity >= offset + skip) {
-        if (list->_data[offset + skip] == std::nullopt) {
+        if (!list->_data[offset + skip].has_value()) {
           _current = &list->_data[offset];
           return;
         }
@@ -86,8 +86,8 @@ public:
         return false;
       _index++;
       size_t offset = (_current - _list->_data) * 8 / sizeof(std::optional<T>);
-      if (_list->_data[RIGHT(offset)] == std::nullopt ||
-          RIGHT(offset) >= _list->_capacity) {
+      if (RIGHT(offset) >= _list->_capacity ||
+          !_list->_data[RIGHT(offset)].has_value()) {
         T value = _current[0].value();
         size_t parent = offset;
         do {
@@ -102,7 +102,7 @@ public:
       }
       offset = RIGHT(offset);
       while (LEFT(offset) < _list->_capacity &&
-             _list->_data[LEFT(offset)] != std::nullopt) {
+             _list->_data[LEFT(offset)].has_value()) {
         offset = LEFT(offset);
       }
       _current = &_list->_data[offset];
@@ -116,8 +116,8 @@ public:
         return false;
       _index--;
       size_t offset = (_current - _list->_data) * 8 / sizeof(std::optional<T>);
-      if (_list->_data[LEFT(offset)] == std::nullopt ||
-          LEFT(offset) >= _list->_capacity) {
+      if (LEFT(offset) >= _list->_capacity ||
+          !_list->_data[LEFT(offset)].has_value()) {
         T value = _current[0].value();
         size_t parent = offset;
         do {
@@ -132,7 +132,7 @@ public:
       }
       offset = LEFT(offset);
       while (RIGHT(offset) < _list->_capacity &&
-             _list->_data[RIGHT(offset)] != std::nullopt) {
+             _list->_data[RIGHT(offset)].has_value()) {
         offset = RIGHT(offset);
       }
       _current = &_list->_data[offset];
@@ -194,10 +194,10 @@ public:
         _data = static_cast<std::optional<T> *>(
             realloc(_data, _capacity * sizeof(std::optional<T>)));
         for (size_t i = old_capacity; i < _capacity; i++) {
-          _data[i] = std::nullopt;
+          _data[i] = std::optional<T>();
         }
       }
-      if (_data[index] == std::nullopt) {
+      if (!_data[index].has_value()) {
         _data[index] = std::make_optional(value);
         _size++;
         return;
@@ -210,7 +210,7 @@ public:
   // the list. This does *not* return items in order. Only useful for debugging.
   std::optional<T> get_raw(size_t index) const noexcept {
     if (index >= _capacity)
-      return std::nullopt;
+      return std::optional<T>();
     return _data[index];
   }
 
