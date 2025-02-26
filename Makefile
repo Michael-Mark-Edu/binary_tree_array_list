@@ -1,16 +1,15 @@
-COMPILER = clang++
-FLAGS = -std=c++23 -g3 -O0 -pedantic -Wall -Wextra -Werror
+FLAGS = -std=c++23 -g3 -O0 -pedantic -Wall -Wextra -Werror -fprofile-arcs -ftest-coverage --coverage
 TEST = bin/run_tests
 LIBS = -l:libgtest.a
 
 $(TEST): bin/binary_tree_array_list_tests.o bin/main.o
-	$(COMPILER) $(FLAGS) $^ -o $@ $(LIBS)
+	g++ $(FLAGS) $^ -o $@ $(LIBS)
 
 bin/binary_tree_array_list_tests.o: tests/binary_tree_array_list_tests.cpp src/binary_tree_array_list.h
-	$(COMPILER) $(FLAGS) $< -c -o $@
+	g++ $(FLAGS) $< -c -o $@
 
 bin/main.o: tests/main.cpp
-	$(COMPILER) $(FLAGS) $< -c -o $@
+	g++ $(FLAGS) $< -c -o $@
 
 .PHONY: build
 build: $(TEST)
@@ -18,6 +17,13 @@ build: $(TEST)
 .PHONY: test
 test: $(TEST)
 	./$<
+
+.PHONY: gcov
+gcov: $(TEST)
+	./$<
+	gcov -o bin tests/*.cpp
+	mv *.gcov bin/
+	gcovr --html-details bin/report.html
 
 .PHONY: clean
 clean:
