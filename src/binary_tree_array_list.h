@@ -206,13 +206,6 @@ public:
     }
   }
 
-  // Returns an optional of the nth (0-indexed) item in the internal array of
-  // the list. This does *not* return items in order. Only useful for debugging.
-  std::optional<T> get_raw(size_t index) const noexcept {
-    if (index >= _capacity)
-      return std::optional<T>();
-    return _data[index];
-  }
 
   // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
   // [] operator, this method cannot throw an exception if index is too large.

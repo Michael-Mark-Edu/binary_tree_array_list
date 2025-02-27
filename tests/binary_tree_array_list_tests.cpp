@@ -1,6 +1,5 @@
 #include "../src/binary_tree_array_list.h"
 #include <gtest/gtest.h>
-#include <optional>
 #include <stdexcept>
 
 TEST(binary_tree_array_list_suite, empty_list_test) {
@@ -24,10 +23,6 @@ TEST(binary_tree_array_list_suite, insert_in_order_test) {
   list.insert(3);
   EXPECT_EQ(list.size(), 3);
   EXPECT_EQ(list.capacity(), 7);
-
-  EXPECT_EQ(list.get_raw(0), std::make_optional(1));
-  EXPECT_EQ(list.get_raw(2), std::make_optional(2));
-  EXPECT_EQ(list.get_raw(6), std::make_optional(3));
 
   EXPECT_EQ(*list.get(0), 1);
   EXPECT_EQ(*list.get(1), 2);
@@ -90,17 +85,6 @@ TEST(binary_tree_array_list_suite, insert_in_random_order_test) {
   list.insert(3);
   list.insert(7);
   EXPECT_EQ(list.size(), 10);
-
-  EXPECT_EQ(list.get_raw(0), std::make_optional(5));
-  EXPECT_EQ(list.get_raw(1), std::make_optional(4));
-  EXPECT_EQ(list.get_raw(2), std::make_optional(9));
-  EXPECT_EQ(list.get_raw(3), std::make_optional(0));
-  EXPECT_EQ(list.get_raw(5), std::make_optional(8));
-  EXPECT_EQ(list.get_raw(8), std::make_optional(1));
-  EXPECT_EQ(list.get_raw(11), std::make_optional(6));
-  EXPECT_EQ(list.get_raw(18), std::make_optional(2));
-  EXPECT_EQ(list.get_raw(24), std::make_optional(7));
-  EXPECT_EQ(list.get_raw(38), std::make_optional(3));
 
   EXPECT_EQ(list[0], 0);
   EXPECT_EQ(list[1], 1);
