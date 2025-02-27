@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iterator>
 #include <optional>
@@ -11,9 +12,15 @@
 #define LEFT(n) ((n) * 2 + 1)
 #define RIGHT(n) ((n) * 2 + 2)
 #define PARENT(n) (((n) - 1) / 2)
+#define IS_LEFT(n) ((n) % 2 == 1)
+#define IS_RIGHT(n) ((n) % 2 == 0)
 
 template <class T> class binary_tree_array_list {
   std::optional<T> *_data;
+  // 256 layers should be more than enough layers for a balanced AVL tree that
+  // can be indexed by up to 2^64. Thanks to AVL tree invariants, the maximum
+  // number of layers needed should only be a few more than 64.
+  int8_t *_height;
   size_t _size;
   size_t _capacity;
 
@@ -163,9 +170,13 @@ public:
   };
 
   // Creates an empty binary tree array list.
-  binary_tree_array_list() : _data(nullptr), _size(0), _capacity(0) {}
+  binary_tree_array_list()
+      : _data(nullptr), _height(nullptr), _size(0), _capacity(0) {}
 
-  ~binary_tree_array_list() noexcept { free(_data); }
+  ~binary_tree_array_list() noexcept {
+    free(_data);
+    free(_height);
+  }
 
   // Returns the number of items in the list.
   size_t size() const noexcept { return _size; }
@@ -180,7 +191,10 @@ public:
   // Removes all items from the list. Does not shrink the list's allocation.
   void clear() {
     free(_data);
-    _data = malloc(_capacity * sizeof(std::optional<T>));
+    free(_height);
+    _data = static_cast<std::optional<T> *>(
+        malloc(_capacity * sizeof(std::optional<T>)));
+    _height = static_cast<int8_t *>(malloc(_capacity * sizeof(int8_t)));
     _size = 0;
   }
 
@@ -193,19 +207,66 @@ public:
         _capacity = LEFT(_capacity);
         _data = static_cast<std::optional<T> *>(
             realloc(_data, _capacity * sizeof(std::optional<T>)));
+        _height =
+            static_cast<int8_t *>(realloc(_height, _capacity * sizeof(int8_t)));
         for (size_t i = old_capacity; i < _capacity; i++) {
           _data[i] = std::optional<T>();
+          _height[i] = -1;
         }
       }
       if (!_data[index].has_value()) {
         _data[index] = std::make_optional(value);
         _size++;
-        return;
+        break;
       }
       index = LEFT(index) + (_data[index].value() < value);
     }
-  }
 
+    _height[index] = 0;
+    while (index > 0) {
+      _height[PARENT(index)] = std::max(
+          _height[PARENT(index)], static_cast<int8_t>(_height[index] + 1));
+      index = PARENT(index);
+
+      // Perform rotations
+      if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {
+        // Left rotation
+        if (_data[RIGHT(index)].has_value() &&
+            _data[RIGHT(RIGHT(index))].has_value()) {
+          std::swap(_data[index], _data[RIGHT(index)]);
+          std::swap(_data[RIGHT(index)], _data[LEFT(index)]);
+          std::swap(_data[RIGHT(index)], _data[RIGHT(RIGHT(index))]);
+          _height[RIGHT(RIGHT(index))] = -1;
+        }
+        // Right rotation
+        else if (_data[LEFT(index)].has_value() &&
+                 _data[LEFT(LEFT(index))].has_value()) {
+          std::swap(_data[index], _data[LEFT(index)]);
+          std::swap(_data[LEFT(index)], _data[RIGHT(index)]);
+          std::swap(_data[LEFT(index)], _data[LEFT(LEFT(index))]);
+          _height[LEFT(LEFT(index))] = -1;
+        }
+        // Left-Right rotation
+        else if (_data[LEFT(index)].has_value() &&
+                 _data[RIGHT(LEFT(index))].has_value()) {
+          std::swap(_data[index], _data[RIGHT(LEFT(index))]);
+          std::swap(_data[RIGHT(index)], _data[RIGHT(LEFT(index))]);
+          _height[RIGHT(LEFT(index))] = -1;
+        }
+        // Right-Left rotation
+        else if (_data[RIGHT(index)].has_value() &&
+                 _data[LEFT(RIGHT(index))].has_value()) {
+          std::swap(_data[index], _data[LEFT(RIGHT(index))]);
+          std::swap(_data[LEFT(index)], _data[LEFT(RIGHT(index))]);
+          _height[LEFT(RIGHT(index))] = -1;
+        }
+        _height[index] = 1;
+        _height[LEFT(index)] = 0;
+        _height[RIGHT(index)] = 0;
+        break;
+      }
+    }
+  }
 
   // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
   // [] operator, this method cannot throw an exception if index is too large.
