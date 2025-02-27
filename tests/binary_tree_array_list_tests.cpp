@@ -56,9 +56,25 @@ TEST(binary_tree_array_list_suite, insert_in_reverse_order_test) {
   list.insert(2);
   list.insert(1);
 
-  EXPECT_EQ(list.get_raw(3), std::make_optional(1));
-  EXPECT_EQ(list.get_raw(1), std::make_optional(2));
-  EXPECT_EQ(list.get_raw(0), std::make_optional(3));
+  EXPECT_EQ(*list.get(0), 1);
+  EXPECT_EQ(*list.get(1), 2);
+  EXPECT_EQ(*list.get(2), 3);
+  EXPECT_EQ(list.get(3), nullptr);
+
+  EXPECT_EQ(list[0], 1);
+  EXPECT_EQ(list[1], 2);
+  EXPECT_EQ(list[2], 3);
+  EXPECT_THROW(list[3], std::logic_error);
+
+  binary_tree_array_list<int>::iterator iter = list.begin();
+  EXPECT_EQ(*iter.get(), 1);
+  EXPECT_TRUE(iter.next());
+  EXPECT_EQ(*iter.get(), 2);
+  EXPECT_TRUE(iter.next());
+  EXPECT_EQ(*iter.get(), 3);
+  EXPECT_TRUE(iter.next());
+  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_FALSE(iter.next());
 }
 
 TEST(binary_tree_array_list_suite, insert_in_random_order_test) {
