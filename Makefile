@@ -36,4 +36,4 @@ vg: $(TEST)
 
 .PHONY: clean
 clean:
-	rm bin/*
+	rm bin/* vgcore.*
