@@ -1,0 +1,17 @@
+name: C/C++ CI
+
+on:
+  - push
+  - pull_request
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: clang-format lint
+      uses: DoozyX/clang-format-lint-action@v0.18.2
+    - run: mkdir ./bin
+    - name: make test
+      run: make test
