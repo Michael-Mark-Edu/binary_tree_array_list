@@ -8,6 +8,7 @@
 #include <iterator>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 #define LEFT(n) ((n) * 2 + 1)
 #define RIGHT(n) ((n) * 2 + 2)
@@ -20,9 +21,62 @@ template <class T> class binary_tree_array_list {
   // 256 layers should be more than enough layers for a balanced AVL tree that
   // can be indexed by up to 2^64. Thanks to AVL tree invariants, the maximum
   // number of layers needed should only be a few more than 64.
-  int8_t *_height;
+  uint8_t *_height;
   size_t _size;
   size_t _capacity;
+
+  void swim(size_t current, size_t skip) {
+    if (current >= _capacity || !_data[current].has_value())
+      return;
+    _data[current - skip] = std::move(_data[current]);
+    _height[current - skip] = std::move(_height[current]) - 1;
+    _data[current].reset();
+    _height[current] = 0;
+    swim(LEFT(current), skip * 2);
+    swim(RIGHT(current), skip * 2);
+  }
+
+  void sink(size_t current, size_t skip) {
+    if (current >= _capacity || !_data[current].has_value())
+      return;
+    if (current + skip >= _capacity) {
+      size_t old_capacity = _capacity;
+      _capacity = LEFT(_capacity);
+      _data = static_cast<std::optional<T> *>(
+          realloc(_data, _capacity * sizeof(std::optional<T>)));
+      _height =
+          static_cast<uint8_t *>(realloc(_height, _capacity * sizeof(uint8_t)));
+      for (size_t i = old_capacity; i < _capacity; i++) {
+        _data[i] = std::optional<T>();
+        _height[i] = 0;
+      }
+    }
+
+    sink(LEFT(current), skip * 2);
+    sink(RIGHT(current), skip * 2);
+
+    _data[current + skip] = std::move(_data[current]);
+    _height[current + skip] = std::move(_height[current]) + 1;
+    _data[current].reset();
+    _height[current] = 0;
+  }
+
+  void sink(size_t start, bool left) {
+    sink(start, static_cast<size_t>(2 - left));
+  }
+
+  void shift(size_t current, long long shift_amount) {
+    if (current >= _capacity || !_data[current].has_value() ||
+        shift_amount == 0)
+      return;
+    _data[current + shift_amount] = std::move(_data[current]);
+    _height[current + shift_amount] = std::move(_height[current]);
+    _data[current].reset();
+    _height[current] = 0;
+
+    shift(LEFT(current), shift_amount * 2);
+    shift(RIGHT(current), shift_amount * 2);
+  }
 
 public:
   class iterator {
@@ -194,7 +248,7 @@ public:
     free(_height);
     _data = static_cast<std::optional<T> *>(
         malloc(_capacity * sizeof(std::optional<T>)));
-    _height = static_cast<int8_t *>(malloc(_capacity * sizeof(int8_t)));
+    _height = static_cast<uint8_t *>(malloc(_capacity * sizeof(uint8_t)));
     _size = 0;
   }
 
@@ -207,11 +261,11 @@ public:
         _capacity = LEFT(_capacity);
         _data = static_cast<std::optional<T> *>(
             realloc(_data, _capacity * sizeof(std::optional<T>)));
-        _height =
-            static_cast<int8_t *>(realloc(_height, _capacity * sizeof(int8_t)));
+        _height = static_cast<uint8_t *>(
+            realloc(_height, _capacity * sizeof(uint8_t)));
         for (size_t i = old_capacity; i < _capacity; i++) {
           _data[i] = std::optional<T>();
-          _height[i] = -1;
+          _height[i] = 0;
         }
       }
       if (!_data[index].has_value()) {
@@ -222,50 +276,151 @@ public:
       index = LEFT(index) + (_data[index].value() < value);
     }
 
-    _height[index] = 0;
+    _height[index] = 1;
     while (index > 0) {
       _height[PARENT(index)] = std::max(
-          _height[PARENT(index)], static_cast<int8_t>(_height[index] + 1));
+          _height[PARENT(index)], static_cast<uint8_t>(_height[index] + 1));
       index = PARENT(index);
+      size_t x = index;
 
-      // Perform rotations
-      if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {
-        // Left rotation
-        if (_data[RIGHT(index)].has_value() &&
-            _data[RIGHT(RIGHT(index))].has_value()) {
-          std::swap(_data[index], _data[RIGHT(index)]);
-          std::swap(_data[RIGHT(index)], _data[LEFT(index)]);
-          std::swap(_data[RIGHT(index)], _data[RIGHT(RIGHT(index))]);
-          _height[RIGHT(RIGHT(index))] = -1;
+      if (std::abs(_height[RIGHT(x)] - _height[LEFT(x)]) >= 2) {
+        uint8_t rotscore = 0;
+        size_t y;
+        if (_height[LEFT(x)] > _height[RIGHT(x)]) {
+          rotscore += 0;
+          y = LEFT(x);
+        } else {
+          rotscore += 1;
+          y = RIGHT(x);
         }
-        // Right rotation
-        else if (_data[LEFT(index)].has_value() &&
-                 _data[LEFT(LEFT(index))].has_value()) {
-          std::swap(_data[index], _data[LEFT(index)]);
-          std::swap(_data[LEFT(index)], _data[RIGHT(index)]);
-          std::swap(_data[LEFT(index)], _data[LEFT(LEFT(index))]);
-          _height[LEFT(LEFT(index))] = -1;
+
+        size_t z;
+        if (_height[LEFT(y)] > _height[RIGHT(y)]) {
+          rotscore += 0;
+          z = LEFT(y);
+        } else {
+          rotscore += 2;
+          z = RIGHT(y);
         }
-        // Left-Right rotation
-        else if (_data[LEFT(index)].has_value() &&
-                 _data[RIGHT(LEFT(index))].has_value()) {
-          std::swap(_data[index], _data[RIGHT(LEFT(index))]);
-          std::swap(_data[RIGHT(index)], _data[RIGHT(LEFT(index))]);
-          _height[RIGHT(LEFT(index))] = -1;
+
+        switch (rotscore) {
+        // Rotate right
+        case 0:
+          std::swap(_data[x], _data[y]);
+          sink(RIGHT(y), false);
+          _data[RIGHT(x)] = std::move(_data[y]);
+          shift(RIGHT(y), 1);
+          swim(z, z - y);
+
+          _height[LEFT(x)] =
+              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+          _height[RIGHT(x)] =
+              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
+
+          break;
+
+        // Rotate right-left
+        case 1:
+          sink(LEFT(x), true);
+          _data[LEFT(x)] = std::move(_data[x]);
+          _data[x] = std::move(_data[z]);
+          _data[z].reset();
+          _height[z] = 0;
+          shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
+          swim(RIGHT(z), RIGHT(z) - z);
+
+          _height[LEFT(x)] =
+              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+          _height[RIGHT(x)] =
+              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
+
+          break;
+
+        // Rotate left-right
+        case 2:
+          sink(RIGHT(x), false);
+          _data[RIGHT(x)] = std::move(_data[x]);
+          _data[x] = std::move(_data[z]);
+          _data[z].reset();
+          _height[z] = 0;
+          shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
+          swim(LEFT(z), LEFT(z) - z);
+
+          _height[LEFT(x)] =
+              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+          _height[RIGHT(x)] =
+              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
+
+          break;
+
+        // Rotate left
+        case 3:
+          std::swap(_data[x], _data[y]);
+          sink(LEFT(y), true);
+          _data[LEFT(x)] = std::move(_data[y]);
+          shift(LEFT(y), 1);
+          swim(z, z - y);
+
+          _height[LEFT(x)] =
+              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+          _height[RIGHT(x)] =
+              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+          _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
+
+          break;
+
+        default:
+          std::unreachable();
         }
-        // Right-Left rotation
-        else if (_data[RIGHT(index)].has_value() &&
-                 _data[LEFT(RIGHT(index))].has_value()) {
-          std::swap(_data[index], _data[LEFT(RIGHT(index))]);
-          std::swap(_data[LEFT(index)], _data[LEFT(RIGHT(index))]);
-          _height[LEFT(RIGHT(index))] = -1;
-        }
-        _height[index] = 1;
-        _height[LEFT(index)] = 0;
-        _height[RIGHT(index)] = 0;
-        break;
       }
     }
+
+    /*while (index > 0) {*/
+    /*  _height[PARENT(index)] = std::max(*/
+    /*      _height[PARENT(index)], static_cast<int8_t>(_height[index] + 1));*/
+    /*  index = PARENT(index);*/
+    /**/
+    /*  // Perform rotations*/
+    /*  if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {*/
+    /*    // Left rotation*/
+    /*    if (_data[RIGHT(index)].has_value() &&*/
+    /*        _data[RIGHT(RIGHT(index))].has_value()) {*/
+    /*      std::swap(_data[index], _data[RIGHT(index)]);*/
+    /*      std::swap(_data[RIGHT(index)], _data[LEFT(index)]);*/
+    /*      std::swap(_data[RIGHT(index)], _data[RIGHT(RIGHT(index))]);*/
+    /*      _height[RIGHT(RIGHT(index))] = -1;*/
+    /*    }*/
+    /*    // Right rotation*/
+    /*    else if (_data[LEFT(index)].has_value() &&*/
+    /*             _data[LEFT(LEFT(index))].has_value()) {*/
+    /*      std::swap(_data[index], _data[LEFT(index)]);*/
+    /*      std::swap(_data[LEFT(index)], _data[RIGHT(index)]);*/
+    /*      std::swap(_data[LEFT(index)], _data[LEFT(LEFT(index))]);*/
+    /*      _height[LEFT(LEFT(index))] = -1;*/
+    /*    }*/
+    /*    // Left-Right rotation*/
+    /*    else if (_data[LEFT(index)].has_value() &&*/
+    /*             _data[RIGHT(LEFT(index))].has_value()) {*/
+    /*      std::swap(_data[index], _data[RIGHT(LEFT(index))]);*/
+    /*      std::swap(_data[RIGHT(index)], _data[RIGHT(LEFT(index))]);*/
+    /*      _height[RIGHT(LEFT(index))] = -1;*/
+    /*    }*/
+    /*    // Right-Left rotation*/
+    /*    else if (_data[RIGHT(index)].has_value() &&*/
+    /*             _data[LEFT(RIGHT(index))].has_value()) {*/
+    /*      std::swap(_data[index], _data[LEFT(RIGHT(index))]);*/
+    /*      std::swap(_data[LEFT(index)], _data[LEFT(RIGHT(index))]);*/
+    /*      _height[LEFT(RIGHT(index))] = -1;*/
+    /*    }*/
+    /*    _height[index] = 1;*/
+    /*    _height[LEFT(index)] = 0;*/
+    /*    _height[RIGHT(index)] = 0;*/
+    /*    break;*/
+    /*  }*/
+    /*}*/
   }
 
   // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
