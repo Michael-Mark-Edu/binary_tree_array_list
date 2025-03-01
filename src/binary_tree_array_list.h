@@ -187,10 +187,15 @@ public:
       return true;
     }
 
-    // Returns the value at the iterator's current position. Throws an exception
-    // if called on the past-the-last item. If this behavior is not desired,
-    // then use the get() method instead.
-    T operator*() const { return *get(); }
+    // Returns the value at the iterator's current position. Throws a
+    // std::logic_error if called on the past-the-last item. If this behavior is
+    // not desired, then use the get() method instead.
+    T operator*() const {
+      const T *item = get();
+      return item ? *item
+                  : throw std::logic_error(
+                        "Tried to dereference past-the-last item");
+    }
 
     // Tests if two iterators are identical.
     bool operator==(binary_tree_array_list::iterator iter) const noexcept {
