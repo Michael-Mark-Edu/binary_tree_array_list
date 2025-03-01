@@ -66,6 +66,76 @@ TEST(btal_functions_suite, empty_test) {
   EXPECT_FALSE(list.empty());
 }
 
+TEST(btal_functions_suite, begin_end_test) {
+  auto list = binary_tree_array_list<int>();
+
+  EXPECT_EQ(list.begin(), list.end());
+  list.insert(5);
+  EXPECT_NE(list.begin(), list.end());
+  list.insert(8);
+  EXPECT_NE(list.begin(), list.end());
+}
+
+TEST(btal_functions_suite, iterator_move_test) {
+  auto list = binary_tree_array_list<int>();
+
+  auto iter = list.begin();
+  EXPECT_FALSE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_FALSE(iter.next());
+  EXPECT_FALSE(iter.prev());
+
+  list.insert(5);
+  iter = list.begin();
+
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_FALSE(iter.prev());
+  EXPECT_NE(iter, list.end());
+
+  EXPECT_TRUE(iter.next());
+  EXPECT_FALSE(iter.has_next());
+  EXPECT_TRUE(iter.has_prev());
+  EXPECT_FALSE(iter.next());
+  EXPECT_EQ(iter, list.end());
+
+  EXPECT_TRUE(iter.prev());
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_FALSE(iter.prev());
+  EXPECT_NE(iter, list.end());
+
+  list.insert(8);
+  iter = list.begin();
+
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_FALSE(iter.prev());
+  EXPECT_NE(iter, list.end());
+
+  EXPECT_TRUE(iter.next());
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_TRUE(iter.has_prev());
+  EXPECT_NE(iter, list.end());
+
+  EXPECT_TRUE(iter.next());
+  EXPECT_FALSE(iter.has_next());
+  EXPECT_TRUE(iter.has_prev());
+  EXPECT_FALSE(iter.next());
+  EXPECT_EQ(iter, list.end());
+
+  EXPECT_TRUE(iter.prev());
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_TRUE(iter.has_prev());
+  EXPECT_NE(iter, list.end());
+
+  EXPECT_TRUE(iter.prev());
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_FALSE(iter.prev());
+  EXPECT_NE(iter, list.end());
+}
+
 TEST(btal_functions_suite, get_test) {
   auto list = binary_tree_array_list<int>();
 
