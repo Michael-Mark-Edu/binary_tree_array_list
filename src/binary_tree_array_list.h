@@ -25,21 +25,12 @@ template <class T> class binary_tree_array_list {
   size_t _size;
   size_t _capacity;
 
-  void swim(size_t current, size_t skip) {
-    if (current >= _capacity || !_data[current].has_value())
+  void shift(size_t current, long long shift_amount) {
+    if (current >= _capacity || !_data[current].has_value() ||
+        shift_amount == 0)
       return;
-    _data[current - skip] = std::move(_data[current]);
-    _height[current - skip] = std::move(_height[current]);
-    _data[current].reset();
-    _height[current] = 0;
-    swim(LEFT(current), skip * 2);
-    swim(RIGHT(current), skip * 2);
-  }
 
-  void sink(size_t current, size_t skip) {
-    if (current >= _capacity || !_data[current].has_value())
-      return;
-    if (current + skip >= _capacity) {
+    while (current + shift_amount >= _capacity) {
       size_t old_capacity = _capacity;
       _capacity = LEFT(_capacity);
       _data = static_cast<std::optional<T> *>(
@@ -52,26 +43,20 @@ template <class T> class binary_tree_array_list {
       }
     }
 
-    sink(LEFT(current), skip * 2);
-    sink(RIGHT(current), skip * 2);
+    if (shift_amount > 0) {
+      shift(LEFT(current), shift_amount * 2);
+      shift(RIGHT(current), shift_amount * 2);
+    }
 
-    _data[current + skip] = std::move(_data[current]);
-    _height[current + skip] = std::move(_height[current]);
-    _data[current].reset();
-    _height[current] = 0;
-  }
-
-  void shift(size_t current, long long shift_amount) {
-    if (current >= _capacity || !_data[current].has_value() ||
-        shift_amount == 0)
-      return;
     _data[current + shift_amount] = std::move(_data[current]);
     _height[current + shift_amount] = std::move(_height[current]);
     _data[current].reset();
     _height[current] = 0;
 
-    shift(LEFT(current), shift_amount * 2);
-    shift(RIGHT(current), shift_amount * 2);
+    if (shift_amount < 0) {
+      shift(LEFT(current), shift_amount * 2);
+      shift(RIGHT(current), shift_amount * 2);
+    }
   }
 
 public:
@@ -309,10 +294,10 @@ public:
         // Rotate right
         case 0:
           std::swap(_data[x], _data[y]);
-          sink(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
           _data[RIGHT(x)] = std::move(_data[y]);
           shift(RIGHT(y), 1);
-          swim(z, z - y);
+          shift(z, y - z);
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -324,13 +309,13 @@ public:
 
         // Rotate right-left
         case 1:
-          sink(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
           _data[LEFT(x)] = std::move(_data[x]);
           _data[x] = std::move(_data[z]);
           _data[z].reset();
           _height[z] = 0;
           shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
-          swim(RIGHT(z), RIGHT(z) - z);
+          shift(RIGHT(z), z - RIGHT(z));
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -342,13 +327,13 @@ public:
 
         // Rotate left-right
         case 2:
-          sink(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
           _data[RIGHT(x)] = std::move(_data[x]);
           _data[x] = std::move(_data[z]);
           _data[z].reset();
           _height[z] = 0;
           shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
-          swim(LEFT(z), LEFT(z) - z);
+          shift(LEFT(z), z - LEFT(z));
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -361,10 +346,10 @@ public:
         // Rotate left
         case 3:
           std::swap(_data[x], _data[y]);
-          sink(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
           _data[LEFT(x)] = std::move(_data[y]);
           shift(LEFT(y), -1);
-          swim(z, z - y);
+          shift(z, y - z);
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
