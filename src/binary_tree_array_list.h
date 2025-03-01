@@ -88,14 +88,13 @@ public:
         return;
       }
       size_t offset = 0;
-      size_t skip = 1;
-      while (list->_capacity >= offset + skip) {
-        if (!list->_data[offset + skip].has_value()) {
+      while (list->_capacity >= LEFT(offset)) {
+        // TODO: Valgrind doesn't like this if statement for some reason
+        if (!list->_data[LEFT(offset)].has_value()) {
           _current = &list->_data[offset];
           return;
         }
-        offset += skip;
-        skip *= 2;
+        offset = LEFT(offset);
       }
       _current = &list->_data[offset];
     }
@@ -142,7 +141,7 @@ public:
       if (_current == nullptr)
         return false;
       _index++;
-      size_t offset = (_current - _list->_data) * 8 / sizeof(std::optional<T>);
+      size_t offset = _current - _list->_data;
       if (RIGHT(offset) >= _list->_capacity ||
           !_list->_data[RIGHT(offset)].has_value()) {
         T value = _current[0].value();
@@ -169,10 +168,19 @@ public:
     // Moves the iterator to the previous item in the list. Returns whether the
     // iterator actually moved. Final item is the first item.
     bool prev() noexcept {
-      if (_index == 0)
+      if (_index == 0 || _list->_size == 0)
         return false;
       _index--;
-      size_t offset = (_current - _list->_data) * 8 / sizeof(std::optional<T>);
+      if (!_current) {
+        size_t index = 0;
+        while (RIGHT(index) < _list->_capacity &&
+               _list->_data[RIGHT(index)].has_value()) {
+          index = RIGHT(index);
+        }
+        _current = &_list->_data[index];
+        return true;
+      }
+      size_t offset = _current - _list->_data;
       if (LEFT(offset) >= _list->_capacity ||
           !_list->_data[LEFT(offset)].has_value()) {
         T value = _current[0].value();
