@@ -136,6 +136,118 @@ TEST(btal_functions_suite, iterator_move_test) {
   EXPECT_NE(iter, list.end());
 }
 
+TEST(btal_functions_suite, iterator_index_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(40);
+  list.insert(-5);
+  list.insert(25);
+  list.insert(80);
+
+  auto iter = list.begin();
+
+  EXPECT_EQ(iter.index(), 0);
+  iter.next();
+  EXPECT_EQ(iter.index(), 1);
+  iter.next();
+  EXPECT_EQ(iter.index(), 2);
+  iter.next();
+  EXPECT_EQ(iter.index(), 3);
+  iter.next();
+  EXPECT_EQ(iter.index(), 4);
+  iter.next();
+  EXPECT_EQ(iter.index(), 4);
+  iter.prev();
+  EXPECT_EQ(iter.index(), 3);
+  iter.prev();
+  EXPECT_EQ(iter.index(), 2);
+  iter.prev();
+  EXPECT_EQ(iter.index(), 1);
+  iter.prev();
+  EXPECT_EQ(iter.index(), 0);
+}
+
+TEST(btal_functions_suite, iterator_get_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(40);
+  list.insert(-5);
+  list.insert(25);
+  list.insert(80);
+
+  auto iter = list.begin();
+
+  EXPECT_EQ(*iter.get(), -5);
+  EXPECT_EQ(*iter, -5);
+  iter.next();
+  EXPECT_EQ(*iter.get(), 25);
+  EXPECT_EQ(*iter, 25);
+  iter.next();
+  EXPECT_EQ(*iter.get(), 40);
+  EXPECT_EQ(*iter, 40);
+  iter.next();
+  EXPECT_EQ(*iter.get(), 80);
+  EXPECT_EQ(*iter, 80);
+  iter.next();
+  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_THROW(*iter, std::logic_error);
+  iter.prev();
+  EXPECT_EQ(*iter.get(), 80);
+  EXPECT_EQ(*iter, 80);
+  iter.prev();
+  EXPECT_EQ(*iter.get(), 40);
+  EXPECT_EQ(*iter, 40);
+  iter.prev();
+  EXPECT_EQ(*iter.get(), 25);
+  EXPECT_EQ(*iter, 25);
+  iter.prev();
+  EXPECT_EQ(*iter.get(), -5);
+  EXPECT_EQ(*iter, -5);
+}
+
+TEST(btal_functions_suite, for_loop_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(40);
+  list.insert(-5);
+  list.insert(25);
+  list.insert(80);
+
+  int i = 0;
+  int a[] = {-5, 25, 40, 80};
+  for (int item : list)
+    EXPECT_EQ(item, a[i++]);
+}
+
+TEST(btal_functions_suite, begin_at_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(40);
+  list.insert(-5);
+  list.insert(25);
+  list.insert(80);
+
+  auto iter = list.begin_at(0);
+  EXPECT_EQ(*iter, -5);
+  EXPECT_EQ(iter.index(), 0);
+
+  iter = list.begin_at(1);
+  EXPECT_EQ(*iter, 25);
+  EXPECT_EQ(iter.index(), 1);
+
+  iter = list.begin_at(2);
+  EXPECT_EQ(*iter, 40);
+  EXPECT_EQ(iter.index(), 2);
+
+  iter = list.begin_at(3);
+  EXPECT_EQ(*iter, 80);
+  EXPECT_EQ(iter.index(), 3);
+
+  iter = list.begin_at(4);
+  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_EQ(iter.index(), 4);
+
+  iter = list.begin_at(5);
+  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_EQ(iter.index(), 4);
+}
+
 TEST(btal_functions_suite, get_test) {
   auto list = binary_tree_array_list<int>();
 
