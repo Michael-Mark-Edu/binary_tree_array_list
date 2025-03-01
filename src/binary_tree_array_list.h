@@ -81,29 +81,27 @@ public:
     std::optional<T> *_current;
     size_t _index;
 
-    inline void
-    construct_at_zero(const binary_tree_array_list<T> *list) noexcept {
-      if (list->_size == 0) {
+    void construct_at_zero() noexcept {
+      if (_list->_size == 0) {
         _current = nullptr;
         return;
       }
       size_t offset = 0;
-      while (list->_capacity >= LEFT(offset)) {
-        // TODO: Valgrind doesn't like this if statement for some reason
-        if (!list->_data[LEFT(offset)].has_value()) {
-          _current = &list->_data[offset];
+      while (LEFT(offset) < _list->_capacity) {
+        if (!_list->_data[LEFT(offset)].has_value()) {
+          _current = &_list->_data[offset];
           return;
         }
         offset = LEFT(offset);
       }
-      _current = &list->_data[offset];
+      _current = &_list->_data[offset];
     }
 
   public:
     // Creates an iterator pointing to the smallest item in the list.
     iterator(const binary_tree_array_list<T> *list) noexcept
         : _list(list), _index(0) {
-      construct_at_zero(list);
+      construct_at_zero();
     }
 
     // Creates an iterator pointing to the nth (0-indexed) smallest item in the
@@ -111,7 +109,7 @@ public:
     // greatest item in the list.
     iterator(const binary_tree_array_list<T> *list, size_t index) noexcept
         : _list(list), _index(0) {
-      construct_at_zero(list);
+      construct_at_zero();
       for (size_t i = 0; i < index; i++) {
         this->next();
       }
