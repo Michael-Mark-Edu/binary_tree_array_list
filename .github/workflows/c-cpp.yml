@@ -23,6 +23,8 @@ jobs:
         cmake .. -DBUILD_GMOCK=OFF
         make
         sudo make install
+    - name: install valgrind
+      run: sudo apt install valgrind
     - run: mkdir ./bin
     - name: make test (valgrind)
       run: make vg
