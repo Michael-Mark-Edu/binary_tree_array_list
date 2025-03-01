@@ -61,10 +61,6 @@ template <class T> class binary_tree_array_list {
     _height[current] = 0;
   }
 
-  void sink(size_t start, bool left) {
-    sink(start, static_cast<size_t>(2 - left));
-  }
-
   void shift(size_t current, long long shift_amount) {
     if (current >= _capacity || !_data[current].has_value() ||
         shift_amount == 0)
@@ -307,7 +303,7 @@ public:
         // Rotate right
         case 0:
           std::swap(_data[x], _data[y]);
-          sink(RIGHT(y), false);
+          sink(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
           _data[RIGHT(x)] = std::move(_data[y]);
           shift(RIGHT(y), 1);
           swim(z, z - y);
@@ -322,7 +318,7 @@ public:
 
         // Rotate right-left
         case 1:
-          sink(LEFT(x), true);
+          sink(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
           _data[LEFT(x)] = std::move(_data[x]);
           _data[x] = std::move(_data[z]);
           _data[z].reset();
@@ -340,7 +336,7 @@ public:
 
         // Rotate left-right
         case 2:
-          sink(RIGHT(x), false);
+          sink(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
           _data[RIGHT(x)] = std::move(_data[x]);
           _data[x] = std::move(_data[z]);
           _data[z].reset();
@@ -359,9 +355,9 @@ public:
         // Rotate left
         case 3:
           std::swap(_data[x], _data[y]);
-          sink(LEFT(y), true);
+          sink(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
           _data[LEFT(x)] = std::move(_data[y]);
-          shift(LEFT(y), 1);
+          shift(LEFT(y), -1);
           swim(z, z - y);
 
           _height[LEFT(x)] =
