@@ -32,7 +32,7 @@ gcov: $(TEST)
 
 .PHONY: vg
 vg: $(TEST)
-	valgrind --leak-check=full --track-origins=yes -s -v ./$<
+	valgrind --error-exitcode=1 --leak-check=full --track-origins=yes -s -v ./$<
 
 .PHONY: clean
 clean:
