@@ -29,7 +29,7 @@ template <class T> class binary_tree_array_list {
     if (current >= _capacity || !_data[current].has_value())
       return;
     _data[current - skip] = std::move(_data[current]);
-    _height[current - skip] = std::move(_height[current]) - 1;
+    _height[current - skip] = std::move(_height[current]);
     _data[current].reset();
     _height[current] = 0;
     swim(LEFT(current), skip * 2);
@@ -56,7 +56,7 @@ template <class T> class binary_tree_array_list {
     sink(RIGHT(current), skip * 2);
 
     _data[current + skip] = std::move(_data[current]);
-    _height[current + skip] = std::move(_height[current]) + 1;
+    _height[current + skip] = std::move(_height[current]);
     _data[current].reset();
     _height[current] = 0;
   }
