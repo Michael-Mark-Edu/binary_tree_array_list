@@ -2,218 +2,345 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 
-TEST(binary_tree_array_list_suite, empty_list_test) {
-  auto list = binary_tree_array_list<int>();
-  EXPECT_EQ(list.size(), 0);
-  EXPECT_EQ(list.capacity(), 0);
-
-  binary_tree_array_list<int>::iterator iter = list.begin();
-  EXPECT_EQ(iter.get(), nullptr);
-  EXPECT_FALSE(iter.next());
+TEST(btal_functions_suite, default_constructor_test) {
+  auto ints = binary_tree_array_list<int>();
+  auto pointers = binary_tree_array_list<int *>();
+  auto unique = binary_tree_array_list<std::unique_ptr<int>>();
 }
 
-TEST(binary_tree_array_list_suite, insert_in_order_test) {
+TEST(btal_functions_suite, insert_test) {
   auto list = binary_tree_array_list<int>();
-  list.insert(1);
-  EXPECT_EQ(list.size(), 1);
-  EXPECT_EQ(list.capacity(), 1);
-  list.insert(2);
-  EXPECT_EQ(list.size(), 2);
-  EXPECT_EQ(list.capacity(), 3);
-  list.insert(3);
-  EXPECT_EQ(list.size(), 3);
-  EXPECT_EQ(list.capacity(), 7);
 
-  EXPECT_EQ(*list.get(0), 1);
-  EXPECT_EQ(*list.get(1), 2);
-  EXPECT_EQ(*list.get(2), 3);
-  EXPECT_EQ(list.get(3), nullptr);
-
-  EXPECT_EQ(list[0], 1);
-  EXPECT_EQ(list[1], 2);
-  EXPECT_EQ(list[2], 3);
-  EXPECT_THROW(list[3], std::logic_error);
-
-  binary_tree_array_list<int>::iterator iter = list.begin();
-  EXPECT_EQ(*iter.get(), 1);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 2);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 3);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(iter.get(), nullptr);
-  EXPECT_FALSE(iter.next());
-}
-
-TEST(binary_tree_array_list_suite, insert_in_reverse_order_test) {
-  auto list = binary_tree_array_list<int>();
-  list.insert(3);
-  list.insert(2);
-  list.insert(1);
-
-  EXPECT_EQ(*list.get(0), 1);
-  EXPECT_EQ(*list.get(1), 2);
-  EXPECT_EQ(*list.get(2), 3);
-  EXPECT_EQ(list.get(3), nullptr);
-
-  EXPECT_EQ(list[0], 1);
-  EXPECT_EQ(list[1], 2);
-  EXPECT_EQ(list[2], 3);
-  EXPECT_THROW(list[3], std::logic_error);
-
-  binary_tree_array_list<int>::iterator iter = list.begin();
-  EXPECT_EQ(*iter.get(), 1);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 2);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 3);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(iter.get(), nullptr);
-  EXPECT_FALSE(iter.next());
-}
-
-TEST(binary_tree_array_list_suite, insert_in_random_order_test) {
-  auto list = binary_tree_array_list<int>();
-  list.insert(5);
-  list.insert(9);
-  list.insert(4);
-  list.insert(0);
-  list.insert(8);
-  list.insert(1);
-  list.insert(2);
-  list.insert(6);
-  list.insert(3);
-  list.insert(7);
-  EXPECT_EQ(list.size(), 10);
-
-  EXPECT_EQ(list[0], 0);
-  EXPECT_EQ(list[1], 1);
-  EXPECT_EQ(list[2], 2);
-  EXPECT_EQ(list[3], 3);
-  EXPECT_EQ(list[4], 4);
-  EXPECT_EQ(list[5], 5);
-  EXPECT_EQ(list[6], 6);
-  EXPECT_EQ(list[7], 7);
-  EXPECT_EQ(list[8], 8);
-  EXPECT_EQ(list[9], 9);
-
-  EXPECT_EQ(*list.get(0), 0);
-  EXPECT_EQ(*list.get(1), 1);
-  EXPECT_EQ(*list.get(2), 2);
-  EXPECT_EQ(*list.get(3), 3);
-  EXPECT_EQ(*list.get(4), 4);
-  EXPECT_EQ(*list.get(5), 5);
-  EXPECT_EQ(*list.get(6), 6);
-  EXPECT_EQ(*list.get(7), 7);
-  EXPECT_EQ(*list.get(8), 8);
-  EXPECT_EQ(*list.get(9), 9);
-
-  binary_tree_array_list<int>::iterator iter = list.begin();
-  EXPECT_EQ(*iter.get(), 0);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 1);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 2);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 3);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 4);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 5);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 6);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 7);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 8);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 9);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(iter.get(), nullptr);
-  EXPECT_FALSE(iter.next());
-}
-
-TEST(binary_tree_array_list_suite, indexed_iterator_test) {
-  auto list = binary_tree_array_list<int>();
-  list.insert(5);
-  list.insert(9);
-  list.insert(4);
-  list.insert(0);
-  list.insert(8);
-  list.insert(1);
-  list.insert(2);
-  list.insert(6);
-  list.insert(3);
-  list.insert(7);
-
-  binary_tree_array_list<int>::iterator iter = list.begin_at(5);
-
-  EXPECT_EQ(*iter.get(), 5);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 6);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 7);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 8);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(*iter.get(), 9);
-  EXPECT_TRUE(iter.next());
-  EXPECT_EQ(iter.get(), nullptr);
-  EXPECT_FALSE(iter.next());
-}
-
-TEST(binary_tree_array_list_suite, prev_iterator_test) {
-  auto list = binary_tree_array_list<int>();
-  list.insert(5);
-  list.insert(9);
-  list.insert(4);
-  list.insert(0);
-  list.insert(8);
-  list.insert(1);
-  list.insert(2);
-  list.insert(6);
-  list.insert(3);
-  list.insert(7);
-
-  binary_tree_array_list<int>::iterator iter = list.begin_at(9);
-  EXPECT_EQ(*iter.get(), 9);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 8);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 7);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 6);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 5);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 4);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 3);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 2);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 1);
-  EXPECT_TRUE(iter.prev());
-  EXPECT_EQ(*iter.get(), 0);
-  EXPECT_FALSE(iter.prev());
-  EXPECT_EQ(*iter.get(), 0);
-}
-
-TEST(binary_tree_array_list_suite, range_for_test) {
-  auto list = binary_tree_array_list<int>();
-  list.insert(5);
-  list.insert(9);
-  list.insert(4);
-  list.insert(0);
-  list.insert(8);
-  list.insert(1);
-  list.insert(2);
-  list.insert(6);
-  list.insert(3);
-  list.insert(7);
-
-  size_t index = 0;
-  for (int item : list) {
-    EXPECT_EQ(item, index++);
+  for (int i = 0; i < 10'000; i++) {
+    ASSERT_NO_THROW(list.insert(i));
   }
+  EXPECT_NO_THROW(list.insert(10'000));
+  EXPECT_NO_THROW(list.insert(10'000));
+}
+
+TEST(btal_functions_suite, size_test) {
+  auto list = binary_tree_array_list<int>();
+
+  EXPECT_EQ(list.size(), 0);
+  for (int i = 0; i < 10'000; i++) {
+    list.insert(i);
+    ASSERT_EQ(list.size(), i + 1);
+  }
+  list.insert(10'000);
+  EXPECT_EQ(list.size(), 10'001);
+  list.insert(10'000);
+  EXPECT_EQ(list.size(), 10'002);
+}
+
+TEST(btal_functions_suite, capacity_test) {
+  auto list = binary_tree_array_list<int>();
+
+  EXPECT_GE(list.capacity(), 0);
+  for (int i = 0; i < 10'000; i++) {
+    list.insert(i);
+    ASSERT_GE(list.size(), i + 1);
+  }
+  list.insert(10'000);
+  EXPECT_GE(list.size(), 10'001);
+  list.insert(10'000);
+  EXPECT_GE(list.size(), 10'002);
+}
+
+TEST(btal_functions_suite, clear_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(0);
+  size_t capacity = list.capacity();
+  list.clear();
+  EXPECT_EQ(list.size(), 0);
+  EXPECT_EQ(list.capacity(), capacity);
+}
+
+TEST(btal_functions_suite, empty_test) {
+  auto list = binary_tree_array_list<int>();
+
+  EXPECT_TRUE(list.empty());
+  list.insert(0);
+  EXPECT_FALSE(list.empty());
+  list.insert(1);
+  EXPECT_FALSE(list.empty());
+}
+
+TEST(btal_functions_suite, get_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(21);
+  list.insert(8);
+
+  EXPECT_EQ(*list.get(0), 8);
+  EXPECT_EQ(*list.get(1), 21);
+  EXPECT_EQ(list.get(2), nullptr);
+  EXPECT_EQ(list.get(-1), nullptr);
+}
+
+TEST(btal_functions_suite, subscript_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(21);
+  list.insert(8);
+
+  EXPECT_EQ(list[0], 8);
+  EXPECT_EQ(list[1], 21);
+  EXPECT_THROW(list[2], std::logic_error);
+  EXPECT_THROW(list[-1], std::logic_error);
+}
+
+TEST(btal_stability_suite, left_balance_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(0);
+  list.insert(1);
+  list.insert(2);
+
+  ASSERT_EQ(list.size(), 3);
+  ASSERT_EQ(list[0], 0);
+  ASSERT_EQ(list[1], 1);
+  ASSERT_EQ(list[2], 2);
+
+  list.insert(3);
+  list.insert(4);
+
+  ASSERT_EQ(list.size(), 5);
+  ASSERT_EQ(list[0], 0);
+  ASSERT_EQ(list[1], 1);
+  ASSERT_EQ(list[2], 2);
+  ASSERT_EQ(list[3], 3);
+  ASSERT_EQ(list[4], 4);
+
+  list.insert(5);
+
+  ASSERT_EQ(list.size(), 6);
+  ASSERT_EQ(list[0], 0);
+  ASSERT_EQ(list[1], 1);
+  ASSERT_EQ(list[2], 2);
+  ASSERT_EQ(list[3], 3);
+  ASSERT_EQ(list[4], 4);
+  ASSERT_EQ(list[5], 5);
+
+  list.insert(6);
+  ASSERT_EQ(list.size(), 7);
+  ASSERT_EQ(list[0], 0);
+  ASSERT_EQ(list[1], 1);
+  ASSERT_EQ(list[2], 2);
+  ASSERT_EQ(list[3], 3);
+  ASSERT_EQ(list[4], 4);
+  ASSERT_EQ(list[5], 5);
+  ASSERT_EQ(list[6], 6);
+}
+
+TEST(btal_stability_suite, right_balance_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(0);
+  list.insert(-1);
+  list.insert(-2);
+
+  ASSERT_EQ(list.size(), 3);
+  ASSERT_EQ(list[0], -2);
+  ASSERT_EQ(list[1], -1);
+  ASSERT_EQ(list[2], 0);
+
+  list.insert(-3);
+  list.insert(-4);
+
+  ASSERT_EQ(list.size(), 5);
+  ASSERT_EQ(list[0], -4);
+  ASSERT_EQ(list[1], -3);
+  ASSERT_EQ(list[2], -2);
+  ASSERT_EQ(list[3], -1);
+  ASSERT_EQ(list[4], 0);
+
+  list.insert(-5);
+
+  ASSERT_EQ(list.size(), 6);
+  ASSERT_EQ(list[0], -5);
+  ASSERT_EQ(list[1], -4);
+  ASSERT_EQ(list[2], -3);
+  ASSERT_EQ(list[3], -2);
+  ASSERT_EQ(list[4], -1);
+  ASSERT_EQ(list[5], 0);
+
+  list.insert(-6);
+  ASSERT_EQ(list.size(), 7);
+  ASSERT_EQ(list[0], -6);
+  ASSERT_EQ(list[1], -5);
+  ASSERT_EQ(list[2], -4);
+  ASSERT_EQ(list[3], -3);
+  ASSERT_EQ(list[4], -2);
+  ASSERT_EQ(list[5], -1);
+  ASSERT_EQ(list[6], 0);
+}
+
+TEST(btal_stability_suite, left_right_balance_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(5000);
+  list.insert(2500);
+  list.insert(3750);
+
+  ASSERT_EQ(list.size(), 3);
+  ASSERT_EQ(list[0], 2500);
+  ASSERT_EQ(list[1], 3750);
+  ASSERT_EQ(list[2], 5000);
+
+  list.insert(1250);
+  list.insert(1875);
+
+  ASSERT_EQ(list.size(), 5);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 1875);
+  ASSERT_EQ(list[2], 2500);
+  ASSERT_EQ(list[3], 3750);
+  ASSERT_EQ(list[4], 5000);
+
+  list.insert(2187);
+
+  ASSERT_EQ(list.size(), 6);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 1875);
+  ASSERT_EQ(list[2], 2187);
+  ASSERT_EQ(list[3], 2500);
+  ASSERT_EQ(list[4], 3750);
+  ASSERT_EQ(list[5], 5000);
+}
+
+TEST(btal_stability_suite, right_left_balance_test) {
+  auto list = binary_tree_array_list<int>();
+
+  list.insert(-5000);
+  list.insert(-2500);
+  list.insert(-3750);
+
+  ASSERT_EQ(list.size(), 3);
+  ASSERT_EQ(list[0], -5000);
+  ASSERT_EQ(list[1], -3750);
+  ASSERT_EQ(list[2], -2500);
+
+  list.insert(-1250);
+  list.insert(-1875);
+
+  ASSERT_EQ(list.size(), 5);
+  ASSERT_EQ(list[0], -5000);
+  ASSERT_EQ(list[1], -3750);
+  ASSERT_EQ(list[2], -2500);
+  ASSERT_EQ(list[3], -1875);
+  ASSERT_EQ(list[4], -1250);
+
+  list.insert(-2187);
+
+  ASSERT_EQ(list.size(), 6);
+  ASSERT_EQ(list[0], -5000);
+  ASSERT_EQ(list[1], -3750);
+  ASSERT_EQ(list[2], -2500);
+  ASSERT_EQ(list[3], -2187);
+  ASSERT_EQ(list[4], -1875);
+  ASSERT_EQ(list[5], -1250);
+}
+
+TEST(btal_stability_suite, complex_balance_test) {
+  auto list = binary_tree_array_list<int>();
+
+  // Left rotation
+  list.insert(5000);
+  list.insert(7500);
+  list.insert(8750);
+  ASSERT_EQ(list.size(), 3);
+  ASSERT_EQ(list[0], 5000);
+  ASSERT_EQ(list[1], 7500);
+  ASSERT_EQ(list[2], 8750);
+
+  // Right rotation
+  list.insert(2500);
+  list.insert(1250);
+  ASSERT_EQ(list.size(), 5);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 2500);
+  ASSERT_EQ(list[2], 5000);
+  ASSERT_EQ(list[3], 7500);
+  ASSERT_EQ(list[4], 8750);
+
+  // Right-left rotation
+  list.insert(9375);
+  list.insert(9062);
+  ASSERT_EQ(list.size(), 7);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 2500);
+  ASSERT_EQ(list[2], 5000);
+  ASSERT_EQ(list[3], 7500);
+  ASSERT_EQ(list[4], 8750);
+  ASSERT_EQ(list[5], 9062);
+  ASSERT_EQ(list[6], 9375);
+
+  // Left rotation
+  list.insert(8906);
+  list.insert(8984);
+  ASSERT_EQ(list.size(), 9);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 2500);
+  ASSERT_EQ(list[2], 5000);
+  ASSERT_EQ(list[3], 7500);
+  ASSERT_EQ(list[4], 8750);
+  ASSERT_EQ(list[5], 8906);
+  ASSERT_EQ(list[6], 8984);
+  ASSERT_EQ(list[7], 9062);
+  ASSERT_EQ(list[8], 9375);
+
+  // Right rotation
+  list.insert(3750);
+  list.insert(3125);
+  ASSERT_EQ(list.size(), 11);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 2500);
+  ASSERT_EQ(list[2], 3125);
+  ASSERT_EQ(list[3], 3750);
+  ASSERT_EQ(list[4], 5000);
+  ASSERT_EQ(list[5], 7500);
+  ASSERT_EQ(list[6], 8750);
+  ASSERT_EQ(list[7], 8906);
+  ASSERT_EQ(list[8], 8984);
+  ASSERT_EQ(list[9], 9062);
+  ASSERT_EQ(list[10], 9375);
+
+  // Right-left rotation
+  list.insert(1875);
+  list.insert(1562);
+  ASSERT_EQ(list.size(), 13);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 1562);
+  ASSERT_EQ(list[2], 1875);
+  ASSERT_EQ(list[3], 2500);
+  ASSERT_EQ(list[4], 3125);
+  ASSERT_EQ(list[5], 3750);
+  ASSERT_EQ(list[6], 5000);
+  ASSERT_EQ(list[7], 7500);
+  ASSERT_EQ(list[8], 8750);
+  ASSERT_EQ(list[9], 8906);
+  ASSERT_EQ(list[10], 8984);
+  ASSERT_EQ(list[11], 9062);
+  ASSERT_EQ(list[12], 9375);
+
+  // Left-right rotation
+  list.insert(9218);
+  list.insert(9296);
+  ASSERT_EQ(list.size(), 15);
+  ASSERT_EQ(list[0], 1250);
+  ASSERT_EQ(list[1], 1562);
+  ASSERT_EQ(list[2], 1875);
+  ASSERT_EQ(list[3], 2500);
+  ASSERT_EQ(list[4], 3125);
+  ASSERT_EQ(list[5], 3750);
+  ASSERT_EQ(list[6], 5000);
+  ASSERT_EQ(list[7], 7500);
+  ASSERT_EQ(list[8], 8750);
+  ASSERT_EQ(list[9], 8906);
+  ASSERT_EQ(list[10], 8984);
+  ASSERT_EQ(list[11], 9062);
+  ASSERT_EQ(list[12], 9218);
+  ASSERT_EQ(list[13], 9296);
+  ASSERT_EQ(list[14], 9375);
 }
