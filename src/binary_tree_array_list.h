@@ -25,21 +25,12 @@ template <class T> class binary_tree_array_list {
   size_t _size;
   size_t _capacity;
 
-  void swim(size_t current, size_t skip) {
-    if (current >= _capacity || !_data[current].has_value())
+  void shift(size_t current, long long shift_amount) {
+    if (current >= _capacity || !_data[current].has_value() ||
+        shift_amount == 0)
       return;
-    _data[current - skip] = std::move(_data[current]);
-    _height[current - skip] = std::move(_height[current]) - 1;
-    _data[current].reset();
-    _height[current] = 0;
-    swim(LEFT(current), skip * 2);
-    swim(RIGHT(current), skip * 2);
-  }
 
-  void sink(size_t current, size_t skip) {
-    if (current >= _capacity || !_data[current].has_value())
-      return;
-    if (current + skip >= _capacity) {
+    while (current + shift_amount >= _capacity) {
       size_t old_capacity = _capacity;
       _capacity = LEFT(_capacity);
       _data = static_cast<std::optional<T> *>(
@@ -52,26 +43,20 @@ template <class T> class binary_tree_array_list {
       }
     }
 
-    sink(LEFT(current), skip * 2);
-    sink(RIGHT(current), skip * 2);
+    if (shift_amount > 0) {
+      shift(LEFT(current), shift_amount * 2);
+      shift(RIGHT(current), shift_amount * 2);
+    }
 
-    _data[current + skip] = std::move(_data[current]);
-    _height[current + skip] = std::move(_height[current]) + 1;
-    _data[current].reset();
-    _height[current] = 0;
-  }
-
-  void shift(size_t current, long long shift_amount) {
-    if (current >= _capacity || !_data[current].has_value() ||
-        shift_amount == 0)
-      return;
     _data[current + shift_amount] = std::move(_data[current]);
     _height[current + shift_amount] = std::move(_height[current]);
     _data[current].reset();
     _height[current] = 0;
 
-    shift(LEFT(current), shift_amount * 2);
-    shift(RIGHT(current), shift_amount * 2);
+    if (shift_amount < 0) {
+      shift(LEFT(current), shift_amount * 2);
+      shift(RIGHT(current), shift_amount * 2);
+    }
   }
 
 public:
@@ -81,29 +66,27 @@ public:
     std::optional<T> *_current;
     size_t _index;
 
-    inline void
-    construct_at_zero(const binary_tree_array_list<T> *list) noexcept {
-      if (list->_size == 0) {
+    void construct_at_zero() noexcept {
+      if (_list->_size == 0) {
         _current = nullptr;
         return;
       }
       size_t offset = 0;
-      while (list->_capacity >= LEFT(offset)) {
-        // TODO: Valgrind doesn't like this if statement for some reason
-        if (!list->_data[LEFT(offset)].has_value()) {
-          _current = &list->_data[offset];
+      while (LEFT(offset) < _list->_capacity) {
+        if (!_list->_data[LEFT(offset)].has_value()) {
+          _current = &_list->_data[offset];
           return;
         }
         offset = LEFT(offset);
       }
-      _current = &list->_data[offset];
+      _current = &_list->_data[offset];
     }
 
   public:
     // Creates an iterator pointing to the smallest item in the list.
     iterator(const binary_tree_array_list<T> *list) noexcept
         : _list(list), _index(0) {
-      construct_at_zero(list);
+      construct_at_zero();
     }
 
     // Creates an iterator pointing to the nth (0-indexed) smallest item in the
@@ -111,7 +94,7 @@ public:
     // greatest item in the list.
     iterator(const binary_tree_array_list<T> *list, size_t index) noexcept
         : _list(list), _index(0) {
-      construct_at_zero(list);
+      construct_at_zero();
       for (size_t i = 0; i < index; i++) {
         this->next();
       }
@@ -204,10 +187,15 @@ public:
       return true;
     }
 
-    // Returns the value at the iterator's current position. Throws an exception
-    // if called on the past-the-last item. If this behavior is not desired,
-    // then use the get() method instead.
-    T operator*() const { return *get(); }
+    // Returns the value at the iterator's current position. Throws a
+    // std::logic_error if called on the past-the-last item. If this behavior is
+    // not desired, then use the get() method instead.
+    T operator*() const {
+      const T *item = get();
+      return item ? *item
+                  : throw std::logic_error(
+                        "Tried to dereference past-the-last item");
+    }
 
     // Tests if two iterators are identical.
     bool operator==(binary_tree_array_list::iterator iter) const noexcept {
@@ -311,10 +299,10 @@ public:
         // Rotate right
         case 0:
           std::swap(_data[x], _data[y]);
-          sink(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
           _data[RIGHT(x)] = std::move(_data[y]);
           shift(RIGHT(y), 1);
-          swim(z, z - y);
+          shift(z, y - z);
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -326,13 +314,13 @@ public:
 
         // Rotate right-left
         case 1:
-          sink(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
           _data[LEFT(x)] = std::move(_data[x]);
           _data[x] = std::move(_data[z]);
           _data[z].reset();
           _height[z] = 0;
           shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
-          swim(RIGHT(z), RIGHT(z) - z);
+          shift(RIGHT(z), z - RIGHT(z));
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -344,13 +332,13 @@ public:
 
         // Rotate left-right
         case 2:
-          sink(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
           _data[RIGHT(x)] = std::move(_data[x]);
           _data[x] = std::move(_data[z]);
           _data[z].reset();
           _height[z] = 0;
           shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
-          swim(LEFT(z), LEFT(z) - z);
+          shift(LEFT(z), z - LEFT(z));
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -363,10 +351,10 @@ public:
         // Rotate left
         case 3:
           std::swap(_data[x], _data[y]);
-          sink(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
           _data[LEFT(x)] = std::move(_data[y]);
           shift(LEFT(y), -1);
-          swim(z, z - y);
+          shift(z, y - z);
 
           _height[LEFT(x)] =
               std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
@@ -381,50 +369,6 @@ public:
         }
       }
     }
-
-    /*while (index > 0) {*/
-    /*  _height[PARENT(index)] = std::max(*/
-    /*      _height[PARENT(index)], static_cast<int8_t>(_height[index] + 1));*/
-    /*  index = PARENT(index);*/
-    /**/
-    /*  // Perform rotations*/
-    /*  if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {*/
-    /*    // Left rotation*/
-    /*    if (_data[RIGHT(index)].has_value() &&*/
-    /*        _data[RIGHT(RIGHT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[RIGHT(index)]);*/
-    /*      std::swap(_data[RIGHT(index)], _data[LEFT(index)]);*/
-    /*      std::swap(_data[RIGHT(index)], _data[RIGHT(RIGHT(index))]);*/
-    /*      _height[RIGHT(RIGHT(index))] = -1;*/
-    /*    }*/
-    /*    // Right rotation*/
-    /*    else if (_data[LEFT(index)].has_value() &&*/
-    /*             _data[LEFT(LEFT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[LEFT(index)]);*/
-    /*      std::swap(_data[LEFT(index)], _data[RIGHT(index)]);*/
-    /*      std::swap(_data[LEFT(index)], _data[LEFT(LEFT(index))]);*/
-    /*      _height[LEFT(LEFT(index))] = -1;*/
-    /*    }*/
-    /*    // Left-Right rotation*/
-    /*    else if (_data[LEFT(index)].has_value() &&*/
-    /*             _data[RIGHT(LEFT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[RIGHT(LEFT(index))]);*/
-    /*      std::swap(_data[RIGHT(index)], _data[RIGHT(LEFT(index))]);*/
-    /*      _height[RIGHT(LEFT(index))] = -1;*/
-    /*    }*/
-    /*    // Right-Left rotation*/
-    /*    else if (_data[RIGHT(index)].has_value() &&*/
-    /*             _data[LEFT(RIGHT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[LEFT(RIGHT(index))]);*/
-    /*      std::swap(_data[LEFT(index)], _data[LEFT(RIGHT(index))]);*/
-    /*      _height[LEFT(RIGHT(index))] = -1;*/
-    /*    }*/
-    /*    _height[index] = 1;*/
-    /*    _height[LEFT(index)] = 0;*/
-    /*    _height[RIGHT(index)] = 0;*/
-    /*    break;*/
-    /*  }*/
-    /*}*/
   }
 
   // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
