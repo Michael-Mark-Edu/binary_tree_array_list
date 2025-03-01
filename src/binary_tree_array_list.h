@@ -373,50 +373,6 @@ public:
         }
       }
     }
-
-    /*while (index > 0) {*/
-    /*  _height[PARENT(index)] = std::max(*/
-    /*      _height[PARENT(index)], static_cast<int8_t>(_height[index] + 1));*/
-    /*  index = PARENT(index);*/
-    /**/
-    /*  // Perform rotations*/
-    /*  if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {*/
-    /*    // Left rotation*/
-    /*    if (_data[RIGHT(index)].has_value() &&*/
-    /*        _data[RIGHT(RIGHT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[RIGHT(index)]);*/
-    /*      std::swap(_data[RIGHT(index)], _data[LEFT(index)]);*/
-    /*      std::swap(_data[RIGHT(index)], _data[RIGHT(RIGHT(index))]);*/
-    /*      _height[RIGHT(RIGHT(index))] = -1;*/
-    /*    }*/
-    /*    // Right rotation*/
-    /*    else if (_data[LEFT(index)].has_value() &&*/
-    /*             _data[LEFT(LEFT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[LEFT(index)]);*/
-    /*      std::swap(_data[LEFT(index)], _data[RIGHT(index)]);*/
-    /*      std::swap(_data[LEFT(index)], _data[LEFT(LEFT(index))]);*/
-    /*      _height[LEFT(LEFT(index))] = -1;*/
-    /*    }*/
-    /*    // Left-Right rotation*/
-    /*    else if (_data[LEFT(index)].has_value() &&*/
-    /*             _data[RIGHT(LEFT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[RIGHT(LEFT(index))]);*/
-    /*      std::swap(_data[RIGHT(index)], _data[RIGHT(LEFT(index))]);*/
-    /*      _height[RIGHT(LEFT(index))] = -1;*/
-    /*    }*/
-    /*    // Right-Left rotation*/
-    /*    else if (_data[RIGHT(index)].has_value() &&*/
-    /*             _data[LEFT(RIGHT(index))].has_value()) {*/
-    /*      std::swap(_data[index], _data[LEFT(RIGHT(index))]);*/
-    /*      std::swap(_data[LEFT(index)], _data[LEFT(RIGHT(index))]);*/
-    /*      _height[LEFT(RIGHT(index))] = -1;*/
-    /*    }*/
-    /*    _height[index] = 1;*/
-    /*    _height[LEFT(index)] = 0;*/
-    /*    _height[RIGHT(index)] = 0;*/
-    /*    break;*/
-    /*  }*/
-    /*}*/
   }
 
   // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
