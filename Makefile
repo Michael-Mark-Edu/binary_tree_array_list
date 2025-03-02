@@ -41,7 +41,7 @@ clean:
 
 .PHONY: install
 install: src/binary_tree_array_list.h
-	mkdir /usr/local/include/imdast
+	mkdir -p /usr/local/include/imdast
 	cp $^ /usr/local/include/imdast
 
 .PHONY: uninstall
