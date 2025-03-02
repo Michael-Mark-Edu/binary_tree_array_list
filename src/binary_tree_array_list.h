@@ -1,3 +1,24 @@
+/* Copyright 2025 Michael Mark
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef BINARY_TREE_ARRAY_LIST_H
 #define BINARY_TREE_ARRAY_LIST_H
 
@@ -5,6 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
@@ -13,14 +35,10 @@
 #define LEFT(n) ((n) * 2 + 1)
 #define RIGHT(n) ((n) * 2 + 2)
 #define PARENT(n) (((n) - 1) / 2)
-#define IS_LEFT(n) ((n) % 2 == 1)
-#define IS_RIGHT(n) ((n) % 2 == 0)
 
+namespace imdast {
 template <class T> class binary_tree_array_list {
   std::optional<T> *_data;
-  // 256 layers should be more than enough layers for a balanced AVL tree that
-  // can be indexed by up to 2^64. Thanks to AVL tree invariants, the maximum
-  // number of layers needed should only be a few more than 64.
   uint8_t *_height;
   size_t _size;
   size_t _capacity;
@@ -29,19 +47,6 @@ template <class T> class binary_tree_array_list {
     if (current >= _capacity || !_data[current].has_value() ||
         shift_amount == 0)
       return;
-
-    while (current + shift_amount >= _capacity) {
-      size_t old_capacity = _capacity;
-      _capacity = LEFT(_capacity);
-      _data = static_cast<std::optional<T> *>(
-          realloc(_data, _capacity * sizeof(std::optional<T>)));
-      _height =
-          static_cast<uint8_t *>(realloc(_height, _capacity * sizeof(uint8_t)));
-      for (size_t i = old_capacity; i < _capacity; i++) {
-        _data[i] = std::optional<T>();
-        _height[i] = 0;
-      }
-    }
 
     if (shift_amount > 0) {
       shift(LEFT(current), shift_amount * 2);
@@ -59,10 +64,21 @@ template <class T> class binary_tree_array_list {
     }
   }
 
+  void deep_copy(const binary_tree_array_list<T> &list) {
+    this->_size = list._size;
+    this->_capacity = list._capacity;
+    this->_data = static_cast<std::optional<T> *>(
+        malloc(list._capacity * sizeof(std::optional<T>)));
+    std::memcpy(this->_data, list._data,
+                list._capacity * sizeof(std::optional<T>));
+    this->_height =
+        static_cast<uint8_t *>(malloc(list._capacity * sizeof(uint8_t)));
+    std::memcpy(this->_height, list._height, list._capacity * sizeof(uint8_t));
+  }
+
 public:
   class iterator {
     const binary_tree_array_list<T> *_list;
-    // Invariant: cannot be nullopt (but it can be nullptr)
     std::optional<T> *_current;
     size_t _index;
 
@@ -83,6 +99,9 @@ public:
     }
 
   public:
+    // Creates an iterator with no associated list.
+    iterator() noexcept : _list(nullptr), _current(nullptr), _index(0) {}
+
     // Creates an iterator pointing to the smallest item in the list.
     iterator(const binary_tree_array_list<T> *list) noexcept
         : _list(list), _index(0) {
@@ -101,9 +120,14 @@ public:
       _index = std::min(index, _index);
     }
 
+    // Performs a shallow copy of the iterator. The copy will act independently
+    // from the original iterator.
+    iterator(const binary_tree_array_list<T>::iterator &iter) noexcept
+        : _list(iter._list), _current(iter._current), _index(iter._index) {}
+
     // Returns a pointer to the current item. May be nullptr.
     const T *get() const noexcept {
-      if (_current == nullptr)
+      if (!_list || !_current)
         return nullptr;
       else
         return &_current->value();
@@ -121,7 +145,7 @@ public:
     // Moves the iterator to the next item in the list. Returns whether the
     // iterator actually moved. Final item is nullptr.
     bool next() noexcept {
-      if (_current == nullptr)
+      if (!_list || !_current)
         return false;
       _index++;
       size_t offset = _current - _list->_data;
@@ -151,7 +175,7 @@ public:
     // Moves the iterator to the previous item in the list. Returns whether the
     // iterator actually moved. Final item is the first item.
     bool prev() noexcept {
-      if (_index == 0 || _list->_size == 0)
+      if (!_list || _index == 0 || _list->_size == 0)
         return false;
       _index--;
       if (!_current) {
@@ -213,11 +237,25 @@ public:
       next();
       return *this;
     }
+
+    // Shallow-copies the right iterator into the left.
+    binary_tree_array_list<T>::iterator &
+    operator=(const binary_tree_array_list<T>::iterator &right) {
+      this->_list = right._list;
+      this->_current = right._current;
+      this->_index = right._index;
+      return *this;
+    }
   };
 
   // Creates an empty binary tree array list.
-  binary_tree_array_list()
+  binary_tree_array_list() noexcept
       : _data(nullptr), _height(nullptr), _size(0), _capacity(0) {}
+
+  // Creates a deep copy of the list.
+  binary_tree_array_list(const binary_tree_array_list<T> &list) noexcept {
+    deep_copy(list);
+  }
 
   ~binary_tree_array_list() noexcept {
     free(_data);
@@ -303,13 +341,6 @@ public:
           _data[RIGHT(x)] = std::move(_data[y]);
           shift(RIGHT(y), 1);
           shift(z, y - z);
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
-
           break;
 
         // Rotate right-left
@@ -321,13 +352,6 @@ public:
           _height[z] = 0;
           shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
           shift(RIGHT(z), z - RIGHT(z));
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
-
           break;
 
         // Rotate left-right
@@ -339,13 +363,6 @@ public:
           _height[z] = 0;
           shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
           shift(LEFT(z), z - LEFT(z));
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
-
           break;
 
         // Rotate left
@@ -355,18 +372,13 @@ public:
           _data[LEFT(x)] = std::move(_data[y]);
           shift(LEFT(y), -1);
           shift(z, y - z);
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
-
           break;
-
-        default:
-          std::unreachable();
         }
+        _height[LEFT(x)] =
+            std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+        _height[RIGHT(x)] =
+            std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+        _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
       }
     }
   }
@@ -407,6 +419,13 @@ public:
 
   // Creates an iterator pointing to the past-the-last item.
   iterator end() const noexcept { return iterator(this, _size); }
+
+  // Deep-copies the right list into the left.
+  binary_tree_array_list<T> &operator=(const binary_tree_array_list<T> &right) {
+    deep_copy(right);
+    return *this;
+  }
 };
+} // namespace imdast
 
 #endif // BINARY_TREE_ARRAY_LIST_H
