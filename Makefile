@@ -38,3 +38,12 @@ vg: $(TEST)
 .PHONY: clean
 clean:
 	rm bin/* vgcore.*
+
+.PHONY: install
+install: src/binary_tree_array_list.h
+	mkdir /usr/local/include/imdast
+	cp $^ /usr/local/include/imdast
+
+.PHONY: uninstall
+uninstall:
+	rm /usr/local/include/imdast/binary_tree_array_list.h
