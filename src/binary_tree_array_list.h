@@ -17,6 +17,7 @@
 #define IS_LEFT(n) ((n) % 2 == 1)
 #define IS_RIGHT(n) ((n) % 2 == 0)
 
+namespace imdast {
 template <class T> class binary_tree_array_list {
   std::optional<T> *_data;
   // 256 layers should be more than enough layers for a balanced AVL tree that
@@ -449,5 +450,6 @@ public:
     return *this;
   }
 };
+} // namespace imdast
 
 #endif // BINARY_TREE_ARRAY_LIST_H

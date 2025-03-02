@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 
+using namespace imdast;
+
 TEST(btal_functions_suite, default_constructor_test) {
   auto ints = binary_tree_array_list<int>();
   auto pointers = binary_tree_array_list<int *>();
