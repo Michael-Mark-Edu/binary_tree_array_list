@@ -272,6 +272,157 @@ TEST(btal_functions_suite, subscript_test) {
   EXPECT_THROW(list[-1], std::logic_error);
 }
 
+TEST(btal_functions_suite, copy_constructor_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(21);
+  list.insert(8);
+
+  binary_tree_array_list<int> list2(list);
+
+  EXPECT_EQ(list.size(), 2);
+  EXPECT_EQ(list2.size(), 2);
+  EXPECT_EQ(list[0], 8);
+  EXPECT_EQ(list[1], 21);
+  EXPECT_EQ(list2[0], 8);
+  EXPECT_EQ(list2[1], 21);
+
+  list.insert(12);
+  list2.insert(16);
+  list2.insert(25);
+
+  EXPECT_EQ(list.size(), 3);
+  EXPECT_EQ(list2.size(), 4);
+  EXPECT_EQ(list[0], 8);
+  EXPECT_EQ(list[1], 12);
+  EXPECT_EQ(list[2], 21);
+  EXPECT_EQ(list2[0], 8);
+  EXPECT_EQ(list2[1], 16);
+  EXPECT_EQ(list2[2], 21);
+  EXPECT_EQ(list2[3], 25);
+}
+
+TEST(btal_functions_suite, iterator_copy_constructor_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(21);
+  list.insert(8);
+
+  binary_tree_array_list<int>::iterator iter = list.begin_at(1);
+  binary_tree_array_list<int>::iterator iter2(iter);
+
+  EXPECT_EQ(*iter, 21);
+  EXPECT_EQ(iter.index(), 1);
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_TRUE(iter.has_prev());
+  EXPECT_EQ(*iter2, 21);
+  EXPECT_EQ(iter2.index(), 1);
+  EXPECT_TRUE(iter2.has_next());
+  EXPECT_TRUE(iter2.has_prev());
+
+  EXPECT_TRUE(iter.prev());
+  EXPECT_EQ(*iter, 8);
+  EXPECT_EQ(iter.index(), 0);
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_EQ(*iter2, 21);
+  EXPECT_EQ(iter2.index(), 1);
+  EXPECT_TRUE(iter2.has_next());
+  EXPECT_TRUE(iter2.has_prev());
+
+  EXPECT_TRUE(iter2.next());
+  EXPECT_EQ(*iter, 8);
+  EXPECT_EQ(iter.index(), 0);
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_EQ(iter2.get(), nullptr);
+  EXPECT_EQ(iter2.index(), 2);
+  EXPECT_FALSE(iter2.has_next());
+  EXPECT_TRUE(iter2.has_prev());
+}
+
+TEST(btal_functions_suite, operator_assign_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(21);
+  list.insert(8);
+
+  binary_tree_array_list<int> list2;
+  list2 = list;
+
+  EXPECT_EQ(list.size(), 2);
+  EXPECT_EQ(list2.size(), 2);
+  EXPECT_EQ(list[0], 8);
+  EXPECT_EQ(list[1], 21);
+  EXPECT_EQ(list2[0], 8);
+  EXPECT_EQ(list2[1], 21);
+
+  list.insert(12);
+  list2.insert(16);
+  list2.insert(25);
+
+  EXPECT_EQ(list.size(), 3);
+  EXPECT_EQ(list2.size(), 4);
+  EXPECT_EQ(list[0], 8);
+  EXPECT_EQ(list[1], 12);
+  EXPECT_EQ(list[2], 21);
+  EXPECT_EQ(list2[0], 8);
+  EXPECT_EQ(list2[1], 16);
+  EXPECT_EQ(list2[2], 21);
+  EXPECT_EQ(list2[3], 25);
+}
+
+TEST(btal_functions_suite, iterator_operator_assign_test) {
+  auto list = binary_tree_array_list<int>();
+  list.insert(21);
+  list.insert(8);
+
+  binary_tree_array_list<int>::iterator iter = list.begin_at(1);
+  binary_tree_array_list<int>::iterator iter2;
+  iter2 = iter;
+
+  EXPECT_EQ(*iter, 21);
+  EXPECT_EQ(iter.index(), 1);
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_TRUE(iter.has_prev());
+  EXPECT_EQ(*iter2, 21);
+  EXPECT_EQ(iter2.index(), 1);
+  EXPECT_TRUE(iter2.has_next());
+  EXPECT_TRUE(iter2.has_prev());
+
+  EXPECT_TRUE(iter.prev());
+  EXPECT_EQ(*iter, 8);
+  EXPECT_EQ(iter.index(), 0);
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_EQ(*iter2, 21);
+  EXPECT_EQ(iter2.index(), 1);
+  EXPECT_TRUE(iter2.has_next());
+  EXPECT_TRUE(iter2.has_prev());
+
+  EXPECT_TRUE(iter2.next());
+  EXPECT_EQ(*iter, 8);
+  EXPECT_EQ(iter.index(), 0);
+  EXPECT_TRUE(iter.has_next());
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_EQ(iter2.get(), nullptr);
+  EXPECT_EQ(iter2.index(), 2);
+  EXPECT_FALSE(iter2.has_next());
+  EXPECT_TRUE(iter2.has_prev());
+}
+
+TEST(btal_functions_suite, iterator_default_constructor_test) {
+  binary_tree_array_list<int>::iterator iter;
+
+  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_THROW(*iter, std::logic_error);
+  EXPECT_FALSE(iter.has_prev());
+  EXPECT_FALSE(iter.prev());
+  EXPECT_FALSE(iter.has_next());
+  EXPECT_FALSE(iter.next());
+  EXPECT_EQ(iter.index(), 0);
+
+  binary_tree_array_list<int>::iterator iter2;
+  EXPECT_EQ(iter, iter2);
+}
+
 TEST(btal_stability_suite, left_balance_test) {
   auto list = binary_tree_array_list<int>();
 
