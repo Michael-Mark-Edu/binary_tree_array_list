@@ -14,15 +14,10 @@
 #define LEFT(n) ((n) * 2 + 1)
 #define RIGHT(n) ((n) * 2 + 2)
 #define PARENT(n) (((n) - 1) / 2)
-#define IS_LEFT(n) ((n) % 2 == 1)
-#define IS_RIGHT(n) ((n) % 2 == 0)
 
 namespace imdast {
 template <class T> class binary_tree_array_list {
   std::optional<T> *_data;
-  // 256 layers should be more than enough layers for a balanced AVL tree that
-  // can be indexed by up to 2^64. Thanks to AVL tree invariants, the maximum
-  // number of layers needed should only be a few more than 64.
   uint8_t *_height;
   size_t _size;
   size_t _capacity;
@@ -31,19 +26,6 @@ template <class T> class binary_tree_array_list {
     if (current >= _capacity || !_data[current].has_value() ||
         shift_amount == 0)
       return;
-
-    while (current + shift_amount >= _capacity) {
-      size_t old_capacity = _capacity;
-      _capacity = LEFT(_capacity);
-      _data = static_cast<std::optional<T> *>(
-          realloc(_data, _capacity * sizeof(std::optional<T>)));
-      _height =
-          static_cast<uint8_t *>(realloc(_height, _capacity * sizeof(uint8_t)));
-      for (size_t i = old_capacity; i < _capacity; i++) {
-        _data[i] = std::optional<T>();
-        _height[i] = 0;
-      }
-    }
 
     if (shift_amount > 0) {
       shift(LEFT(current), shift_amount * 2);
@@ -76,7 +58,6 @@ template <class T> class binary_tree_array_list {
 public:
   class iterator {
     const binary_tree_array_list<T> *_list;
-    // Invariant: cannot be nullopt (but it can be nullptr)
     std::optional<T> *_current;
     size_t _index;
 
@@ -339,13 +320,6 @@ public:
           _data[RIGHT(x)] = std::move(_data[y]);
           shift(RIGHT(y), 1);
           shift(z, y - z);
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
-
           break;
 
         // Rotate right-left
@@ -357,13 +331,6 @@ public:
           _height[z] = 0;
           shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
           shift(RIGHT(z), z - RIGHT(z));
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
-
           break;
 
         // Rotate left-right
@@ -375,13 +342,6 @@ public:
           _height[z] = 0;
           shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
           shift(LEFT(z), z - LEFT(z));
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[LEFT(x)], _height[RIGHT(x)]) + 1;
-
           break;
 
         // Rotate left
@@ -391,18 +351,13 @@ public:
           _data[LEFT(x)] = std::move(_data[y]);
           shift(LEFT(y), -1);
           shift(z, y - z);
-
-          _height[LEFT(x)] =
-              std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-          _height[RIGHT(x)] =
-              std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-          _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
-
           break;
-
-        default:
-          std::unreachable();
         }
+        _height[LEFT(x)] =
+            std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+        _height[RIGHT(x)] =
+            std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+        _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
       }
     }
   }
