@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
@@ -59,6 +60,18 @@ template <class T> class binary_tree_array_list {
     }
   }
 
+  void deep_copy(const binary_tree_array_list<T> &list) {
+    this->_size = list._size;
+    this->_capacity = list._capacity;
+    this->_data = static_cast<std::optional<T> *>(
+        malloc(list._capacity * sizeof(std::optional<T>)));
+    std::memcpy(this->_data, list._data,
+                list._capacity * sizeof(std::optional<T>));
+    this->_height =
+        static_cast<uint8_t *>(malloc(list._capacity * sizeof(uint8_t)));
+    std::memcpy(this->_height, list._height, list._capacity * sizeof(uint8_t));
+  }
+
 public:
   class iterator {
     const binary_tree_array_list<T> *_list;
@@ -83,6 +96,9 @@ public:
     }
 
   public:
+    // Creates an iterator with no associated list.
+    iterator() noexcept : _list(nullptr), _current(nullptr), _index(0) {}
+
     // Creates an iterator pointing to the smallest item in the list.
     iterator(const binary_tree_array_list<T> *list) noexcept
         : _list(list), _index(0) {
@@ -101,9 +117,14 @@ public:
       _index = std::min(index, _index);
     }
 
+    // Performs a shallow copy of the iterator. The copy will act independently
+    // from the original iterator.
+    iterator(const binary_tree_array_list<T>::iterator &iter) noexcept
+        : _list(iter._list), _current(iter._current), _index(iter._index) {}
+
     // Returns a pointer to the current item. May be nullptr.
     const T *get() const noexcept {
-      if (_current == nullptr)
+      if (!_list || !_current)
         return nullptr;
       else
         return &_current->value();
@@ -121,7 +142,7 @@ public:
     // Moves the iterator to the next item in the list. Returns whether the
     // iterator actually moved. Final item is nullptr.
     bool next() noexcept {
-      if (_current == nullptr)
+      if (!_list || !_current)
         return false;
       _index++;
       size_t offset = _current - _list->_data;
@@ -151,7 +172,7 @@ public:
     // Moves the iterator to the previous item in the list. Returns whether the
     // iterator actually moved. Final item is the first item.
     bool prev() noexcept {
-      if (_index == 0 || _list->_size == 0)
+      if (!_list || _index == 0 || _list->_size == 0)
         return false;
       _index--;
       if (!_current) {
@@ -213,11 +234,25 @@ public:
       next();
       return *this;
     }
+
+    // Shallow-copies the right iterator into the left.
+    binary_tree_array_list<T>::iterator &
+    operator=(const binary_tree_array_list<T>::iterator &right) {
+      this->_list = right._list;
+      this->_current = right._current;
+      this->_index = right._index;
+      return *this;
+    }
   };
 
   // Creates an empty binary tree array list.
-  binary_tree_array_list()
+  binary_tree_array_list() noexcept
       : _data(nullptr), _height(nullptr), _size(0), _capacity(0) {}
+
+  // Creates a deep copy of the list.
+  binary_tree_array_list(const binary_tree_array_list<T> &list) noexcept {
+    deep_copy(list);
+  }
 
   ~binary_tree_array_list() noexcept {
     free(_data);
@@ -407,6 +442,12 @@ public:
 
   // Creates an iterator pointing to the past-the-last item.
   iterator end() const noexcept { return iterator(this, _size); }
+
+  // Deep-copies the right list into the left.
+  binary_tree_array_list<T> &operator=(const binary_tree_array_list<T> &right) {
+    deep_copy(right);
+    return *this;
+  }
 };
 
 #endif // BINARY_TREE_ARRAY_LIST_H
