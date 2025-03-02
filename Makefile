@@ -1,10 +1,11 @@
 TEST = bin/run_tests
 LIBS = -l:libgtest.a
 
-ifeq ($(MODE), release)
- FLAGS = -std=c++23 -O3 -pedantic -Wall -Wextra -Werror
+FLAGS = -std=c++23 -pedantic -Wall -Wextra -Werror
+ifeq ($(RELEASE), true)
+	FLAGS += -O3
 else
- FLAGS = -std=c++23 -g3 -O0 -pedantic -Wall -Wextra -Werror -fprofile-arcs -ftest-coverage --coverage
+	FLAGS += -g3 -O0 -fprofile-arcs -ftest-coverage --coverage
 endif
 
 $(TEST): bin/binary_tree_array_list_tests.o bin/main.o
