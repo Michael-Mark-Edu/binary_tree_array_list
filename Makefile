@@ -8,17 +8,14 @@ else
 	FLAGS += -g3 -O0 -fprofile-arcs -ftest-coverage --coverage
 endif
 
-$(TEST): bin/binary_tree_array_list_tests.o bin/main.o
+SOURCES = $(wildcard tests/*.cpp)
+OBJECTS = $(SOURCES:tests/%.cpp=bin/%.o)
+
+$(TEST): $(OBJECTS)
 	g++ $(FLAGS) $^ -o $@ $(LIBS)
 
-bin/binary_tree_array_list_tests.o: tests/binary_tree_array_list_tests.cpp src/binary_tree_array_list.h
+bin/%.o: tests/%.cpp
 	g++ $(FLAGS) $< -c -o $@
-
-bin/main.o: tests/main.cpp
-	g++ $(FLAGS) $< -c -o $@
-
-.PHONY: build
-build: $(TEST)
 
 .PHONY: test
 test: $(TEST)
