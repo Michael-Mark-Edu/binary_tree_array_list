@@ -125,12 +125,12 @@ public:
     iterator(const binary_tree_array_list<T>::iterator &iter) noexcept
         : _list(iter._list), _current(iter._current), _index(iter._index) {}
 
-    // Returns a pointer to the current item. May be nullptr.
-    const T *get() const noexcept {
+    // Returns an optional by-value to the current item. May be nullopt.
+    std::optional<T> get() const noexcept {
       if (!_list || !_current)
-        return nullptr;
+        return std::nullopt;
       else
-        return &_current->value();
+        return *_current;
     }
 
     // Returns the index of the iterator.
@@ -211,14 +211,14 @@ public:
       return true;
     }
 
-    // Returns the value at the iterator's current position. Throws a
+    // Returns the value by-value at the iterator's current position. Throws a
     // std::logic_error if called on the past-the-last item. If this behavior is
     // not desired, then use the get() method instead.
     T operator*() const {
-      const T *item = get();
-      return item ? *item
-                  : throw std::logic_error(
-                        "Tried to dereference past-the-last item");
+      std::optional<T> item = get();
+      return item.has_value() ? item.value()
+                              : throw std::logic_error(
+                                    "Tried to dereference past-the-last item");
     }
 
     // Tests if two iterators are identical.
@@ -383,28 +383,29 @@ public:
     }
   }
 
-  // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
-  // [] operator, this method cannot throw an exception if index is too large.
-  const T *get(size_t index) const noexcept {
+  // Returns an optional by-value to the nth (0-indexed) item in the list.
+  // Unlike the [] operator, this method cannot throw an exception if index is
+  // too large.
+  std::optional<T> get(size_t index) const noexcept {
     iterator iter = iterator(this);
     for (size_t i = 0; i < index; i++) {
       if (!iter.next())
-        return nullptr;
+        return std::nullopt;
     }
     return iter.get();
   }
 
-  // Returns a const reference to the nth (0-indexed) item in the list. If index
-  // is >= size(), then a std::logic_error is thrown. If this behavior is not
-  // desired, then use the get() method instead.
-  const T &operator[](size_t index) const {
+  // Returns by-value the nth (0-indexed) item in the list. If index is >=
+  // size(), then a std::logic_error is thrown. If this behavior is not desired,
+  // then use the get() method instead.
+  T operator[](size_t index) const {
     if (index >= _size)
       throw std::logic_error("Subscript out-of-bounds");
     iterator iter = iterator(this);
     for (size_t i = 0; i < index; i++) {
       iter.next();
     }
-    return *iter.get();
+    return iter.get().value();
   }
 
   // Creates an iterator pointing to the smallest item in the list.

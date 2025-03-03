@@ -1,5 +1,6 @@
 #include "../src/binary_tree_array_list.h"
 #include <gtest/gtest.h>
+#include <optional>
 #include <stdexcept>
 
 using namespace imdast;
@@ -177,31 +178,31 @@ TEST(btal_functions_suite, iterator_get_test) {
 
   auto iter = list.begin();
 
-  EXPECT_EQ(*iter.get(), -5);
+  EXPECT_EQ(iter.get(), std::make_optional(-5));
   EXPECT_EQ(*iter, -5);
   iter.next();
-  EXPECT_EQ(*iter.get(), 25);
+  EXPECT_EQ(iter.get(), std::make_optional(25));
   EXPECT_EQ(*iter, 25);
   iter.next();
-  EXPECT_EQ(*iter.get(), 40);
+  EXPECT_EQ(iter.get(), std::make_optional(40));
   EXPECT_EQ(*iter, 40);
   iter.next();
-  EXPECT_EQ(*iter.get(), 80);
+  EXPECT_EQ(iter.get(), std::make_optional(80));
   EXPECT_EQ(*iter, 80);
   iter.next();
-  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_EQ(iter.get(), std::nullopt);
   EXPECT_THROW(*iter, std::logic_error);
   iter.prev();
-  EXPECT_EQ(*iter.get(), 80);
+  EXPECT_EQ(iter.get(), std::make_optional(80));
   EXPECT_EQ(*iter, 80);
   iter.prev();
-  EXPECT_EQ(*iter.get(), 40);
+  EXPECT_EQ(iter.get(), std::make_optional(40));
   EXPECT_EQ(*iter, 40);
   iter.prev();
-  EXPECT_EQ(*iter.get(), 25);
+  EXPECT_EQ(iter.get(), std::make_optional(25));
   EXPECT_EQ(*iter, 25);
   iter.prev();
-  EXPECT_EQ(*iter.get(), -5);
+  EXPECT_EQ(iter.get(), std::make_optional(-5));
   EXPECT_EQ(*iter, -5);
 }
 
@@ -242,11 +243,11 @@ TEST(btal_functions_suite, begin_at_test) {
   EXPECT_EQ(iter.index(), 3);
 
   iter = list.begin_at(4);
-  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_EQ(iter.get(), std::nullopt);
   EXPECT_EQ(iter.index(), 4);
 
   iter = list.begin_at(5);
-  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_EQ(iter.get(), std::nullopt);
   EXPECT_EQ(iter.index(), 4);
 }
 
@@ -256,10 +257,10 @@ TEST(btal_functions_suite, get_test) {
   list.insert(21);
   list.insert(8);
 
-  EXPECT_EQ(*list.get(0), 8);
-  EXPECT_EQ(*list.get(1), 21);
-  EXPECT_EQ(list.get(2), nullptr);
-  EXPECT_EQ(list.get(-1), nullptr);
+  EXPECT_EQ(list.get(0), std::make_optional(8));
+  EXPECT_EQ(list.get(1), std::make_optional(21));
+  EXPECT_EQ(list.get(2), std::nullopt);
+  EXPECT_EQ(list.get(-1), std::nullopt);
 }
 
 TEST(btal_functions_suite, subscript_test) {
@@ -335,7 +336,7 @@ TEST(btal_functions_suite, iterator_copy_constructor_test) {
   EXPECT_EQ(iter.index(), 0);
   EXPECT_TRUE(iter.has_next());
   EXPECT_FALSE(iter.has_prev());
-  EXPECT_EQ(iter2.get(), nullptr);
+  EXPECT_EQ(iter2.get(), std::nullopt);
   EXPECT_EQ(iter2.index(), 2);
   EXPECT_FALSE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
@@ -404,7 +405,7 @@ TEST(btal_functions_suite, iterator_operator_assign_test) {
   EXPECT_EQ(iter.index(), 0);
   EXPECT_TRUE(iter.has_next());
   EXPECT_FALSE(iter.has_prev());
-  EXPECT_EQ(iter2.get(), nullptr);
+  EXPECT_EQ(iter2.get(), std::nullopt);
   EXPECT_EQ(iter2.index(), 2);
   EXPECT_FALSE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
@@ -413,7 +414,7 @@ TEST(btal_functions_suite, iterator_operator_assign_test) {
 TEST(btal_functions_suite, iterator_default_constructor_test) {
   binary_tree_array_list<int>::iterator iter;
 
-  EXPECT_EQ(iter.get(), nullptr);
+  EXPECT_EQ(iter.get(), std::nullopt);
   EXPECT_THROW(*iter, std::logic_error);
   EXPECT_FALSE(iter.has_prev());
   EXPECT_FALSE(iter.prev());
