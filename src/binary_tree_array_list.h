@@ -246,7 +246,7 @@ public:
       this->_index = right._index;
       return *this;
     }
-  };
+  }; // class iterator
 
   // Creates an empty binary tree array list.
   binary_tree_array_list() noexcept
@@ -425,7 +425,7 @@ public:
     deep_copy(right);
     return *this;
   }
-};
+}; // class binary_tree_array_list
 } // namespace imdast
 
 #endif // BINARY_TREE_ARRAY_LIST_H
