@@ -14,7 +14,7 @@ OBJECTS = $(SOURCES:tests/%.cpp=bin/%.o)
 $(TEST): $(OBJECTS)
 	g++ $(FLAGS) $^ -o $@ $(LIBS)
 
-bin/%.o: tests/%.cpp
+bin/%.o: tests/%.cpp src/binary_tree_array_list.h
 	g++ $(FLAGS) $< -c -o $@
 
 .PHONY: test
