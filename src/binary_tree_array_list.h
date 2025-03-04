@@ -278,7 +278,10 @@ public:
     free(_height);
     _data = static_cast<std::optional<T> *>(
         malloc(_capacity * sizeof(std::optional<T>)));
-    _height = static_cast<uint8_t *>(malloc(_capacity * sizeof(uint8_t)));
+    for (size_t i = 0; i < _capacity; i++) {
+      _data[i] = std::optional<T>();
+    }
+    _height = static_cast<uint8_t *>(calloc(_capacity, sizeof(uint8_t)));
     _size = 0;
   }
 
@@ -381,6 +384,17 @@ public:
         _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
       }
     }
+  }
+
+  // Checks if the list contains an item.
+  bool contains(const T &value) const noexcept {
+    size_t index = 0;
+    while (index < _capacity && _data[index].has_value()) {
+      if (value == _data[index].value())
+        return true;
+      index = value < _data[index].value() ? LEFT(index) : RIGHT(index);
+    }
+    return false;
   }
 
   // Returns an optional by-value to the nth (0-indexed) item in the list.

@@ -425,3 +425,35 @@ TEST(btal_functions_suite, iterator_default_constructor_test) {
   binary_tree_array_list<int>::iterator iter2;
   EXPECT_EQ(iter, iter2);
 }
+
+TEST(btal_functions_suite, contains_test) {
+  binary_tree_array_list<int> list;
+
+  EXPECT_FALSE(list.contains(5));
+  EXPECT_FALSE(list.contains(8));
+  EXPECT_FALSE(list.contains(13));
+
+  list.insert(5);
+
+  EXPECT_TRUE(list.contains(5));
+  EXPECT_FALSE(list.contains(8));
+  EXPECT_FALSE(list.contains(13));
+
+  list.insert(8);
+
+  EXPECT_TRUE(list.contains(5));
+  EXPECT_TRUE(list.contains(8));
+  EXPECT_FALSE(list.contains(13));
+
+  list.insert(13);
+
+  EXPECT_TRUE(list.contains(5));
+  EXPECT_TRUE(list.contains(8));
+  EXPECT_TRUE(list.contains(13));
+
+  list.clear();
+
+  EXPECT_FALSE(list.contains(5));
+  EXPECT_FALSE(list.contains(8));
+  EXPECT_FALSE(list.contains(13));
+}
