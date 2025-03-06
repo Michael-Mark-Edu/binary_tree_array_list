@@ -78,6 +78,74 @@ template <class T> class binary_tree_array_list {
     std::memcpy(this->_height, list._height, list._capacity * sizeof(uint8_t));
   }
 
+  void rebalance(size_t x) {
+    uint8_t rotscore = 0;
+    size_t y;
+    if (_height[LEFT(x)] > _height[RIGHT(x)]) {
+      rotscore += 0;
+      y = LEFT(x);
+    } else {
+      rotscore += 1;
+      y = RIGHT(x);
+    }
+
+    size_t z;
+    if (_height[LEFT(y)] > _height[RIGHT(y)]) {
+      rotscore += 0;
+      z = LEFT(y);
+    } else {
+      rotscore += 2;
+      z = RIGHT(y);
+    }
+
+    switch (rotscore) {
+    // Rotate right
+    case 0:
+      std::swap(_data[x], _data[y]);
+      shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+      _data[RIGHT(x)] = std::move(_data[y]);
+      shift(RIGHT(y), 1);
+      shift(z, y - z);
+      break;
+
+    // Rotate right-left
+    case 1:
+      shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+      _data[LEFT(x)] = std::move(_data[x]);
+      _data[x] = std::move(_data[z]);
+      _data[z].reset();
+      _height[z] = 0;
+      shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
+      shift(RIGHT(z), z - RIGHT(z));
+      break;
+
+    // Rotate left-right
+    case 2:
+      shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+      _data[RIGHT(x)] = std::move(_data[x]);
+      _data[x] = std::move(_data[z]);
+      _data[z].reset();
+      _height[z] = 0;
+      shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
+      shift(LEFT(z), z - LEFT(z));
+      break;
+
+    // Rotate left
+    case 3:
+      std::swap(_data[x], _data[y]);
+      shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+      _data[LEFT(x)] = std::move(_data[y]);
+      shift(LEFT(y), -1);
+      shift(z, y - z);
+      break;
+    }
+    _height[LEFT(x)] =
+        std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+    _height[RIGHT(x)] =
+        std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+    _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
+  }
+
 public:
   class iterator {
     const binary_tree_array_list<T> *_list;
@@ -355,79 +423,53 @@ public:
 
     _height[index] = 1;
     while (index > 0) {
-      _height[PARENT(index)] = std::max(
-          _height[PARENT(index)], static_cast<uint8_t>(_height[index] + 1));
       index = PARENT(index);
-      size_t x = index;
+      if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {
+        rebalance(index);
+      }
+      _height[index] =
+          std::max(_height[LEFT(index)], _height[RIGHT(index)]) + 1;
+    }
+  }
 
-      if (std::abs(_height[RIGHT(x)] - _height[LEFT(x)]) >= 2) {
-        uint8_t rotscore = 0;
-        size_t y;
-        if (_height[LEFT(x)] > _height[RIGHT(x)]) {
-          rotscore += 0;
-          y = LEFT(x);
-        } else {
-          rotscore += 1;
-          y = RIGHT(x);
-        }
+  // Removes an item from the list, returning whether said item was in the list.
+  bool remove(const T &value) {
+    size_t index = 0;
+    while (index < _capacity && _data[index].has_value()) {
+      if (_data[index].value() == value) {
+        goto found;
+      }
+      index = value < _data[index] ? LEFT(index) : RIGHT(index);
+    }
+    return false;
 
-        size_t z;
-        if (_height[LEFT(y)] > _height[RIGHT(y)]) {
-          rotscore += 0;
-          z = LEFT(y);
-        } else {
-          rotscore += 2;
-          z = RIGHT(y);
-        }
-
-        switch (rotscore) {
-        // Rotate right
-        case 0:
-          std::swap(_data[x], _data[y]);
-          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
-          _data[RIGHT(x)] = std::move(_data[y]);
-          shift(RIGHT(y), 1);
-          shift(z, y - z);
-          break;
-
-        // Rotate right-left
-        case 1:
-          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
-          _data[LEFT(x)] = std::move(_data[x]);
-          _data[x] = std::move(_data[z]);
-          _data[z].reset();
-          _height[z] = 0;
-          shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
-          shift(RIGHT(z), z - RIGHT(z));
-          break;
-
-        // Rotate left-right
-        case 2:
-          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
-          _data[RIGHT(x)] = std::move(_data[x]);
-          _data[x] = std::move(_data[z]);
-          _data[z].reset();
-          _height[z] = 0;
-          shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
-          shift(LEFT(z), z - LEFT(z));
-          break;
-
-        // Rotate left
-        case 3:
-          std::swap(_data[x], _data[y]);
-          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
-          _data[LEFT(x)] = std::move(_data[y]);
-          shift(LEFT(y), -1);
-          shift(z, y - z);
-          break;
-        }
-        _height[LEFT(x)] =
-            std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-        _height[RIGHT(x)] =
-            std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-        _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
+  found:
+    size_t next = RIGHT(index);
+    if (next >= _capacity || !_data[next].has_value()) {
+      _data[index].reset();
+    } else {
+      while (LEFT(next) < _capacity && _data[LEFT(next)].has_value()) {
+        next = LEFT(next);
+      }
+      _data[index] = std::move(_data[next]);
+      if (RIGHT(next) >= _capacity || !_data[RIGHT(next)].has_value()) {
+        _data[next].reset();
+      } else {
+        shift(RIGHT(next), next - RIGHT(next));
       }
     }
+
+    while (index > 0) {
+      index = PARENT(index);
+      if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {
+        rebalance(index);
+      }
+      _height[index] =
+          std::max(_height[LEFT(index)], _height[RIGHT(index)]) + 1;
+    }
+
+    _size--;
+    return true;
   }
 
   // Checks if the list contains an item.

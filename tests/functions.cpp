@@ -440,3 +440,54 @@ TEST(btal_functions_suite, find_test) {
   EXPECT_TRUE(iter4.has_prev());
   EXPECT_FALSE(iter4.has_next());
 }
+
+TEST(btal_functions_suite, remove_test) {
+  binary_tree_array_list<int> list;
+  list.insert(5);
+  list.insert(13);
+  list.insert(8);
+
+  EXPECT_TRUE(list.remove(8));
+  EXPECT_EQ(list.size(), 2);
+  EXPECT_EQ(list[0], 5);
+  EXPECT_EQ(list[1], 13);
+  EXPECT_EQ(list.get(2), std::nullopt);
+
+  EXPECT_FALSE(list.remove(10));
+  EXPECT_EQ(list.size(), 2);
+  EXPECT_EQ(list[0], 5);
+  EXPECT_EQ(list[1], 13);
+  EXPECT_EQ(list.get(2), std::nullopt);
+
+  EXPECT_TRUE(list.remove(5));
+  EXPECT_EQ(list.size(), 1);
+  EXPECT_EQ(list[0], 13);
+  EXPECT_EQ(list.get(1), std::nullopt);
+
+  EXPECT_FALSE(list.remove(5));
+  EXPECT_EQ(list.size(), 1);
+  EXPECT_EQ(list[0], 13);
+  EXPECT_EQ(list.get(1), std::nullopt);
+
+  EXPECT_TRUE(list.remove(13));
+  EXPECT_EQ(list.size(), 0);
+  EXPECT_EQ(list.get(0), std::nullopt);
+}
+
+TEST(btal_functions_suite, mass_remove_test) {
+  auto list = binary_tree_array_list<int>();
+
+  for (int i = 0; i < 10'000; i++) {
+    list.insert(i);
+  }
+  for (int i = 0; i < 10'000; i += 2) {
+    list.remove(i);
+  }
+
+  size_t i = 1;
+  for (int item : list) {
+    ASSERT_EQ(item, i);
+    i += 2;
+  }
+  EXPECT_EQ(list.size(), 5'000);
+}
