@@ -28,7 +28,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iterator>
+#include <limits>
 #include <optional>
+#include <stack>
 #include <stdexcept>
 #include <utility>
 
@@ -79,32 +81,29 @@ template <class T> class binary_tree_array_list {
 public:
   class iterator {
     const binary_tree_array_list<T> *_list;
-    std::optional<T> *_current;
-    size_t _index;
+    size_t _current;
 
     void construct_at_zero() noexcept {
       if (_list->_size == 0) {
-        _current = nullptr;
+        _current = std::numeric_limits<size_t>::max();
         return;
       }
-      size_t offset = 0;
-      while (LEFT(offset) < _list->_capacity) {
-        if (!_list->_data[LEFT(offset)].has_value()) {
-          _current = &_list->_data[offset];
+      _current = 0;
+      while (LEFT(_current) < _list->_capacity) {
+        if (!_list->_data[LEFT(_current)].has_value()) {
           return;
         }
-        offset = LEFT(offset);
+        _current = LEFT(_current);
       }
-      _current = &_list->_data[offset];
     }
 
   public:
     // Creates an iterator with no associated list.
-    iterator() noexcept : _list(nullptr), _current(nullptr), _index(0) {}
+    iterator() noexcept
+        : _list(nullptr), _current(std::numeric_limits<size_t>::max()) {}
 
     // Creates an iterator pointing to the smallest item in the list.
-    iterator(const binary_tree_array_list<T> *list) noexcept
-        : _list(list), _index(0) {
+    iterator(const binary_tree_array_list<T> *list) noexcept : _list(list) {
       construct_at_zero();
     }
 
@@ -112,55 +111,68 @@ public:
     // list. If index is >= list->size(), then the iterator will point to the
     // greatest item in the list.
     iterator(const binary_tree_array_list<T> *list, size_t index) noexcept
-        : _list(list), _index(0) {
+        : _list(list) {
       construct_at_zero();
       for (size_t i = 0; i < index; i++) {
         this->next();
       }
-      _index = std::min(index, _index);
     }
 
     // Performs a shallow copy of the iterator. The copy will act independently
     // from the original iterator.
     iterator(const binary_tree_array_list<T>::iterator &iter) noexcept
-        : _list(iter._list), _current(iter._current), _index(iter._index) {}
+        : _list(iter._list), _current(iter._current) {}
 
     // Returns an optional by-value to the current item. May be nullopt.
     std::optional<T> get() const noexcept {
-      if (!_list || !_current)
+      if (!_list || _current == std::numeric_limits<size_t>::max())
         return std::nullopt;
       else
-        return *_current;
+        return _list->_data[_current];
     }
 
-    // Returns the index of the iterator.
-    size_t index() const noexcept { return _index; }
-
     // Checks if calling next() would pass or fail.
-    bool has_next() const noexcept { return _current != nullptr; }
+    bool has_next() const noexcept {
+      return _current != std::numeric_limits<size_t>::max();
+    }
 
     // Checks if calling prev() would pass or fail.
-    bool has_prev() const noexcept { return _index > 0; }
+    bool has_prev() const noexcept {
+      if (!_list)
+        return false;
+      if (_current == std::numeric_limits<size_t>::max())
+        return _list->_size > 0;
+      if (LEFT(_current) < _list->_capacity &&
+          _list->_data[LEFT(_current)].has_value())
+        return true;
+      size_t index = _current;
+      while (index > 0) {
+        if (_list->_data[PARENT(index)].value() <
+            _list->_data[_current].value())
+          return true;
+        index = PARENT(index);
+      }
+      return false;
+    }
 
     // Moves the iterator to the next item in the list. Returns whether the
     // iterator actually moved. Final item is nullptr.
     bool next() noexcept {
-      if (!_list || !_current)
+      if (!_list || _current == std::numeric_limits<size_t>::max())
         return false;
-      _index++;
-      size_t offset = _current - _list->_data;
+      size_t offset = _current;
       if (RIGHT(offset) >= _list->_capacity ||
           !_list->_data[RIGHT(offset)].has_value()) {
-        T value = _current[0].value();
+        T value = _list->_data[_current].value();
         size_t parent = offset;
         do {
           if (parent == 0) {
-            _current = nullptr;
+            _current = std::numeric_limits<size_t>::max();
             return true;
           }
           parent = PARENT(parent);
         } while (_list->_data[parent].value() < value);
-        _current = &_list->_data[parent];
+        _current = parent;
         return true;
       }
       offset = RIGHT(offset);
@@ -168,38 +180,48 @@ public:
              _list->_data[LEFT(offset)].has_value()) {
         offset = LEFT(offset);
       }
-      _current = &_list->_data[offset];
+      _current = offset;
       return true;
     }
 
     // Moves the iterator to the previous item in the list. Returns whether the
     // iterator actually moved. Final item is the first item.
     bool prev() noexcept {
-      if (!_list || _index == 0 || _list->_size == 0)
+      if (!_list || _list->_size == 0 ||
+          (_current == std::numeric_limits<size_t>::max() && _list->_size == 0))
         return false;
-      _index--;
-      if (!_current) {
-        size_t index = 0;
-        while (RIGHT(index) < _list->_capacity &&
-               _list->_data[RIGHT(index)].has_value()) {
-          index = RIGHT(index);
+
+      {
+        size_t i = 0;
+        while (LEFT(i) < _list->_capacity &&
+               _list->_data[LEFT(i)].has_value()) {
+          i = LEFT(i);
         }
-        _current = &_list->_data[index];
+        if (_current == i)
+          return false;
+      }
+
+      if (_current == std::numeric_limits<size_t>::max()) {
+        _current = 0;
+        while (RIGHT(_current) < _list->_capacity &&
+               _list->_data[RIGHT(_current)].has_value()) {
+          _current = RIGHT(_current);
+        }
         return true;
       }
-      size_t offset = _current - _list->_data;
+      size_t offset = _current;
       if (LEFT(offset) >= _list->_capacity ||
           !_list->_data[LEFT(offset)].has_value()) {
-        T value = _current[0].value();
+        T value = _list->_data[_current].value();
         size_t parent = offset;
         do {
           if (parent == 0) {
-            _current = nullptr;
+            _current = std::numeric_limits<size_t>::max();
             return true;
           }
           parent = PARENT(parent);
         } while (_list->_data[parent].value() > value);
-        _current = &_list->_data[parent];
+        _current = parent;
         return true;
       }
       offset = LEFT(offset);
@@ -207,7 +229,7 @@ public:
              _list->_data[RIGHT(offset)].has_value()) {
         offset = RIGHT(offset);
       }
-      _current = &_list->_data[offset];
+      _current = offset;
       return true;
     }
 
@@ -243,7 +265,6 @@ public:
     operator=(const binary_tree_array_list<T>::iterator &right) {
       this->_list = right._list;
       this->_current = right._current;
-      this->_index = right._index;
       return *this;
     }
   }; // class iterator

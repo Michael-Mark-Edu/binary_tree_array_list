@@ -139,36 +139,6 @@ TEST(btal_functions_suite, iterator_move_test) {
   EXPECT_NE(iter, list.end());
 }
 
-TEST(btal_functions_suite, iterator_index_test) {
-  auto list = binary_tree_array_list<int>();
-  list.insert(40);
-  list.insert(-5);
-  list.insert(25);
-  list.insert(80);
-
-  auto iter = list.begin();
-
-  EXPECT_EQ(iter.index(), 0);
-  iter.next();
-  EXPECT_EQ(iter.index(), 1);
-  iter.next();
-  EXPECT_EQ(iter.index(), 2);
-  iter.next();
-  EXPECT_EQ(iter.index(), 3);
-  iter.next();
-  EXPECT_EQ(iter.index(), 4);
-  iter.next();
-  EXPECT_EQ(iter.index(), 4);
-  iter.prev();
-  EXPECT_EQ(iter.index(), 3);
-  iter.prev();
-  EXPECT_EQ(iter.index(), 2);
-  iter.prev();
-  EXPECT_EQ(iter.index(), 1);
-  iter.prev();
-  EXPECT_EQ(iter.index(), 0);
-}
-
 TEST(btal_functions_suite, iterator_get_test) {
   auto list = binary_tree_array_list<int>();
   list.insert(40);
@@ -228,27 +198,21 @@ TEST(btal_functions_suite, begin_at_test) {
 
   auto iter = list.begin_at(0);
   EXPECT_EQ(*iter, -5);
-  EXPECT_EQ(iter.index(), 0);
 
   iter = list.begin_at(1);
   EXPECT_EQ(*iter, 25);
-  EXPECT_EQ(iter.index(), 1);
 
   iter = list.begin_at(2);
   EXPECT_EQ(*iter, 40);
-  EXPECT_EQ(iter.index(), 2);
 
   iter = list.begin_at(3);
   EXPECT_EQ(*iter, 80);
-  EXPECT_EQ(iter.index(), 3);
 
   iter = list.begin_at(4);
   EXPECT_EQ(iter.get(), std::nullopt);
-  EXPECT_EQ(iter.index(), 4);
 
   iter = list.begin_at(5);
   EXPECT_EQ(iter.get(), std::nullopt);
-  EXPECT_EQ(iter.index(), 4);
 }
 
 TEST(btal_functions_suite, get_test) {
@@ -313,31 +277,25 @@ TEST(btal_functions_suite, iterator_copy_constructor_test) {
   binary_tree_array_list<int>::iterator iter2(iter);
 
   EXPECT_EQ(*iter, 21);
-  EXPECT_EQ(iter.index(), 1);
   EXPECT_TRUE(iter.has_next());
   EXPECT_TRUE(iter.has_prev());
   EXPECT_EQ(*iter2, 21);
-  EXPECT_EQ(iter2.index(), 1);
   EXPECT_TRUE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
 
   EXPECT_TRUE(iter.prev());
   EXPECT_EQ(*iter, 8);
-  EXPECT_EQ(iter.index(), 0);
   EXPECT_TRUE(iter.has_next());
   EXPECT_FALSE(iter.has_prev());
   EXPECT_EQ(*iter2, 21);
-  EXPECT_EQ(iter2.index(), 1);
   EXPECT_TRUE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
 
   EXPECT_TRUE(iter2.next());
   EXPECT_EQ(*iter, 8);
-  EXPECT_EQ(iter.index(), 0);
   EXPECT_TRUE(iter.has_next());
   EXPECT_FALSE(iter.has_prev());
   EXPECT_EQ(iter2.get(), std::nullopt);
-  EXPECT_EQ(iter2.index(), 2);
   EXPECT_FALSE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
 }
@@ -382,31 +340,25 @@ TEST(btal_functions_suite, iterator_operator_assign_test) {
   iter2 = iter;
 
   EXPECT_EQ(*iter, 21);
-  EXPECT_EQ(iter.index(), 1);
   EXPECT_TRUE(iter.has_next());
   EXPECT_TRUE(iter.has_prev());
   EXPECT_EQ(*iter2, 21);
-  EXPECT_EQ(iter2.index(), 1);
   EXPECT_TRUE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
 
   EXPECT_TRUE(iter.prev());
   EXPECT_EQ(*iter, 8);
-  EXPECT_EQ(iter.index(), 0);
   EXPECT_TRUE(iter.has_next());
   EXPECT_FALSE(iter.has_prev());
   EXPECT_EQ(*iter2, 21);
-  EXPECT_EQ(iter2.index(), 1);
   EXPECT_TRUE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
 
   EXPECT_TRUE(iter2.next());
   EXPECT_EQ(*iter, 8);
-  EXPECT_EQ(iter.index(), 0);
   EXPECT_TRUE(iter.has_next());
   EXPECT_FALSE(iter.has_prev());
   EXPECT_EQ(iter2.get(), std::nullopt);
-  EXPECT_EQ(iter2.index(), 2);
   EXPECT_FALSE(iter2.has_next());
   EXPECT_TRUE(iter2.has_prev());
 }
@@ -420,7 +372,6 @@ TEST(btal_functions_suite, iterator_default_constructor_test) {
   EXPECT_FALSE(iter.prev());
   EXPECT_FALSE(iter.has_next());
   EXPECT_FALSE(iter.next());
-  EXPECT_EQ(iter.index(), 0);
 
   binary_tree_array_list<int>::iterator iter2;
   EXPECT_EQ(iter, iter2);
