@@ -19,8 +19,8 @@
  * SOFTWARE.
  */
 
-#ifndef BINARY_TREE_ARRAY_LIST_H
-#define BINARY_TREE_ARRAY_LIST_H
+#ifndef IMDAST_BINARY_TREE_ARRAY_LIST_H
+#define IMDAST_BINARY_TREE_ARRAY_LIST_H
 
 #include <algorithm>
 #include <cstddef>
@@ -494,4 +494,4 @@ public:
 }; // class binary_tree_array_list
 } // namespace imdast
 
-#endif // BINARY_TREE_ARRAY_LIST_H
+#endif // IMDAST_BINARY_TREE_ARRAY_LIST_H
