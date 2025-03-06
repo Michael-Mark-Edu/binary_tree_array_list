@@ -2,7 +2,7 @@ TEST = bin/run_tests
 LIBS = -l:libgtest.a
 
 FLAGS = -std=c++23 -pedantic -Wall -Wextra -Werror
-ifeq ($(RELEASE), true)
+ifeq ($(OPTIMIZE), true)
 	FLAGS += -O3
 else
 	FLAGS += -g3 -O0 -fprofile-arcs -ftest-coverage --coverage

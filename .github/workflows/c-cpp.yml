@@ -27,4 +27,4 @@ jobs:
       run: sudo apt install valgrind
     - run: mkdir ./bin
     - name: make test (valgrind)
-      run: make vg RELEASE=true
+      run: make vg OPTIMIZE=true
