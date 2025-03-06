@@ -97,6 +97,12 @@ public:
       }
     }
 
+    // Parameters are reversed compared to how I usually put them in order to
+    // disambiguate the iterator. It's ugly, but works well enough for a private
+    // API.
+    iterator(size_t current, const binary_tree_array_list<T> *list)
+        : _list(list), _current(current) {}
+
   public:
     // Creates an iterator with no associated list.
     iterator() noexcept
@@ -122,6 +128,23 @@ public:
     // from the original iterator.
     iterator(const binary_tree_array_list<T>::iterator &iter) noexcept
         : _list(iter._list), _current(iter._current) {}
+
+    // Searches for the item, then constructs an iterator starting at that item.
+    // If the list does not contain the item, then the iterator will start at
+    // the past-the-last element.
+    static iterator find(const binary_tree_array_list<T> *list,
+                         const T &item) noexcept {
+      size_t current = 0;
+      while (current < list->_capacity && list->_data[current].has_value()) {
+        if (item == list->_data[current].value()) {
+          return iterator(current, list);
+        }
+        current = item < list->_data[current].value() ? LEFT(current)
+                                                      : RIGHT(current);
+      }
+      current = -1;
+      return iterator(current, list);
+    }
 
     // Returns an optional by-value to the current item. May be nullopt.
     std::optional<T> get() const noexcept {
@@ -416,6 +439,13 @@ public:
       index = value < _data[index].value() ? LEFT(index) : RIGHT(index);
     }
     return false;
+  }
+
+  // Returns an iterator starting at where the given value is, if the list
+  // contains that value. Otherwise, returns an iterator to the past-the-last
+  // item.
+  iterator find(const T &value) const noexcept {
+    return iterator::find(this, value);
   }
 
   // Returns an optional by-value to the nth (0-indexed) item in the list.

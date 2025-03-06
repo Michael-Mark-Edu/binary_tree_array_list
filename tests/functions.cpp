@@ -7,6 +7,7 @@ using namespace imdast;
 
 TEST(btal_functions_suite, default_constructor_test) {
   auto ints = binary_tree_array_list<int>();
+  auto sizet = binary_tree_array_list<size_t>();
   auto pointers = binary_tree_array_list<int *>();
   auto unique = binary_tree_array_list<std::unique_ptr<int>>();
 }
@@ -407,4 +408,35 @@ TEST(btal_functions_suite, contains_test) {
   EXPECT_FALSE(list.contains(5));
   EXPECT_FALSE(list.contains(8));
   EXPECT_FALSE(list.contains(13));
+}
+
+TEST(btal_functions_suite, find_test) {
+  binary_tree_array_list<int> list;
+  list.insert(5);
+  list.insert(13);
+  list.insert(8);
+
+  auto iter1 = list.find(5);
+  EXPECT_EQ(iter1, binary_tree_array_list<int>::iterator::find(&list, 5));
+  EXPECT_EQ(iter1.get(), std::make_optional(5));
+  EXPECT_FALSE(iter1.has_prev());
+  EXPECT_TRUE(iter1.has_next());
+
+  auto iter2 = list.find(8);
+  EXPECT_EQ(iter2, binary_tree_array_list<int>::iterator::find(&list, 8));
+  EXPECT_EQ(iter2.get(), std::make_optional(8));
+  EXPECT_TRUE(iter2.has_prev());
+  EXPECT_TRUE(iter2.has_next());
+
+  auto iter3 = list.find(13);
+  EXPECT_EQ(iter3, binary_tree_array_list<int>::iterator::find(&list, 13));
+  EXPECT_EQ(iter3.get(), std::make_optional(13));
+  EXPECT_TRUE(iter3.has_prev());
+  EXPECT_TRUE(iter3.has_next());
+
+  auto iter4 = list.find(18);
+  EXPECT_EQ(iter4, binary_tree_array_list<int>::iterator::find(&list, 18));
+  EXPECT_EQ(iter4.get(), std::nullopt);
+  EXPECT_TRUE(iter4.has_prev());
+  EXPECT_FALSE(iter4.has_next());
 }
