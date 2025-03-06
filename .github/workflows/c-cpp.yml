@@ -25,6 +25,6 @@ jobs:
         sudo make install
     - name: install valgrind
       run: sudo apt install valgrind
-    - run: mkdir ./bin
+    - run: mkdir ./build
     - name: make test (valgrind)
       run: make vg OPTIMIZE=true

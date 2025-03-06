@@ -1,4 +1,4 @@
-TEST = bin/run_tests
+TEST = build/run_tests
 LIBS = -l:libgtest.a
 
 FLAGS = -std=c++23 -pedantic -Wall -Wextra -Werror
@@ -9,12 +9,12 @@ else
 endif
 
 SOURCES = $(wildcard tests/*.cpp)
-OBJECTS = $(SOURCES:tests/%.cpp=bin/%.o)
+OBJECTS = $(SOURCES:tests/%.cpp=build/%.o)
 
 $(TEST): $(OBJECTS)
 	g++ $(FLAGS) $^ -o $@ $(LIBS)
 
-bin/%.o: tests/%.cpp src/binary_tree_array_list.h
+build/%.o: tests/%.cpp src/binary_tree_array_list.h
 	g++ $(FLAGS) $< -c -o $@
 
 .PHONY: test
@@ -24,9 +24,9 @@ test: $(TEST)
 .PHONY: gcov
 gcov: $(TEST)
 	./$<
-	gcov -o bin tests/*.cpp
-	mv *.gcov bin/
-	gcovr --html-details bin/report.html
+	gcov -o build tests/*.cpp
+	mv *.gcov build/
+	gcovr --html-details build/report.html
 
 .PHONY: vg
 vg: $(TEST)
@@ -34,7 +34,7 @@ vg: $(TEST)
 
 .PHONY: clean
 clean:
-	rm bin/* vgcore.*
+	rm build/* vgcore.*
 
 .PHONY: install
 install: src/binary_tree_array_list.h
