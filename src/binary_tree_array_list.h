@@ -19,8 +19,10 @@
  * SOFTWARE.
  */
 
-#ifndef BINARY_TREE_ARRAY_LIST_H
-#define BINARY_TREE_ARRAY_LIST_H
+// binary_tree_array_list.h v0.3.0
+
+#ifndef IMDAST_BINARY_TREE_ARRAY_LIST_H
+#define IMDAST_BINARY_TREE_ARRAY_LIST_H
 
 #include <algorithm>
 #include <cstddef>
@@ -28,7 +30,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iterator>
+#include <limits>
 #include <optional>
+#include <stack>
 #include <stdexcept>
 #include <utility>
 
@@ -76,35 +80,106 @@ template <class T> class binary_tree_array_list {
     std::memcpy(this->_height, list._height, list._capacity * sizeof(uint8_t));
   }
 
+  void rebalance(size_t x) {
+    uint8_t rotscore = 0;
+    size_t y;
+    if (_height[LEFT(x)] > _height[RIGHT(x)]) {
+      rotscore += 0;
+      y = LEFT(x);
+    } else {
+      rotscore += 1;
+      y = RIGHT(x);
+    }
+
+    size_t z;
+    if (_height[LEFT(y)] > _height[RIGHT(y)]) {
+      rotscore += 0;
+      z = LEFT(y);
+    } else {
+      rotscore += 2;
+      z = RIGHT(y);
+    }
+
+    switch (rotscore) {
+    // Rotate right
+    case 0:
+      std::swap(_data[x], _data[y]);
+      shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+      _data[RIGHT(x)] = std::move(_data[y]);
+      shift(RIGHT(y), 1);
+      shift(z, y - z);
+      break;
+
+    // Rotate right-left
+    case 1:
+      shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+      _data[LEFT(x)] = std::move(_data[x]);
+      _data[x] = std::move(_data[z]);
+      _data[z].reset();
+      _height[z] = 0;
+      shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
+      shift(RIGHT(z), z - RIGHT(z));
+      break;
+
+    // Rotate left-right
+    case 2:
+      shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
+      _data[RIGHT(x)] = std::move(_data[x]);
+      _data[x] = std::move(_data[z]);
+      _data[z].reset();
+      _height[z] = 0;
+      shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
+      shift(LEFT(z), z - LEFT(z));
+      break;
+
+    // Rotate left
+    case 3:
+      std::swap(_data[x], _data[y]);
+      shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
+      _data[LEFT(x)] = std::move(_data[y]);
+      shift(LEFT(y), -1);
+      shift(z, y - z);
+      break;
+    }
+    _height[LEFT(x)] =
+        std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
+    _height[RIGHT(x)] =
+        std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
+    _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
+  }
+
 public:
   class iterator {
     const binary_tree_array_list<T> *_list;
-    std::optional<T> *_current;
-    size_t _index;
+    size_t _current;
 
     void construct_at_zero() noexcept {
       if (_list->_size == 0) {
-        _current = nullptr;
+        _current = std::numeric_limits<size_t>::max();
         return;
       }
-      size_t offset = 0;
-      while (LEFT(offset) < _list->_capacity) {
-        if (!_list->_data[LEFT(offset)].has_value()) {
-          _current = &_list->_data[offset];
+      _current = 0;
+      while (LEFT(_current) < _list->_capacity) {
+        if (!_list->_data[LEFT(_current)].has_value()) {
           return;
         }
-        offset = LEFT(offset);
+        _current = LEFT(_current);
       }
-      _current = &_list->_data[offset];
     }
+
+    // Parameters are reversed compared to how I usually put them in order to
+    // disambiguate the iterator. It's ugly, but works well enough for a private
+    // API.
+    iterator(size_t current, const binary_tree_array_list<T> *list)
+        : _list(list), _current(current) {}
 
   public:
     // Creates an iterator with no associated list.
-    iterator() noexcept : _list(nullptr), _current(nullptr), _index(0) {}
+    iterator() noexcept
+        : _list(nullptr), _current(std::numeric_limits<size_t>::max()) {}
 
     // Creates an iterator pointing to the smallest item in the list.
-    iterator(const binary_tree_array_list<T> *list) noexcept
-        : _list(list), _index(0) {
+    iterator(const binary_tree_array_list<T> *list) noexcept : _list(list) {
       construct_at_zero();
     }
 
@@ -112,55 +187,85 @@ public:
     // list. If index is >= list->size(), then the iterator will point to the
     // greatest item in the list.
     iterator(const binary_tree_array_list<T> *list, size_t index) noexcept
-        : _list(list), _index(0) {
+        : _list(list) {
       construct_at_zero();
       for (size_t i = 0; i < index; i++) {
         this->next();
       }
-      _index = std::min(index, _index);
     }
 
     // Performs a shallow copy of the iterator. The copy will act independently
     // from the original iterator.
     iterator(const binary_tree_array_list<T>::iterator &iter) noexcept
-        : _list(iter._list), _current(iter._current), _index(iter._index) {}
+        : _list(iter._list), _current(iter._current) {}
 
-    // Returns a pointer to the current item. May be nullptr.
-    const T *get() const noexcept {
-      if (!_list || !_current)
-        return nullptr;
-      else
-        return &_current->value();
+    // Searches for the item, then constructs an iterator starting at that item.
+    // If the list does not contain the item, then the iterator will start at
+    // the past-the-last element.
+    static iterator find(const binary_tree_array_list<T> *list,
+                         const T &item) noexcept {
+      size_t current = 0;
+      while (current < list->_capacity && list->_data[current].has_value()) {
+        if (item == list->_data[current].value()) {
+          return iterator(current, list);
+        }
+        current = item < list->_data[current].value() ? LEFT(current)
+                                                      : RIGHT(current);
+      }
+      current = -1;
+      return iterator(current, list);
     }
 
-    // Returns the index of the iterator.
-    size_t index() const noexcept { return _index; }
+    // Returns an optional by-value to the current item. May be nullopt.
+    std::optional<T> get() const noexcept {
+      if (!_list || _current == std::numeric_limits<size_t>::max())
+        return std::nullopt;
+      else
+        return _list->_data[_current];
+    }
 
     // Checks if calling next() would pass or fail.
-    bool has_next() const noexcept { return _current != nullptr; }
+    bool has_next() const noexcept {
+      return _current != std::numeric_limits<size_t>::max();
+    }
 
     // Checks if calling prev() would pass or fail.
-    bool has_prev() const noexcept { return _index > 0; }
+    bool has_prev() const noexcept {
+      if (!_list)
+        return false;
+      if (_current == std::numeric_limits<size_t>::max())
+        return _list->_size > 0;
+      if (LEFT(_current) < _list->_capacity &&
+          _list->_data[LEFT(_current)].has_value())
+        return true;
+      size_t index = _current;
+      while (index > 0) {
+        if (_list->_data[PARENT(index)].value() <
+            _list->_data[_current].value())
+          return true;
+        index = PARENT(index);
+      }
+      return false;
+    }
 
     // Moves the iterator to the next item in the list. Returns whether the
     // iterator actually moved. Final item is nullptr.
     bool next() noexcept {
-      if (!_list || !_current)
+      if (!_list || _current == std::numeric_limits<size_t>::max())
         return false;
-      _index++;
-      size_t offset = _current - _list->_data;
+      size_t offset = _current;
       if (RIGHT(offset) >= _list->_capacity ||
           !_list->_data[RIGHT(offset)].has_value()) {
-        T value = _current[0].value();
+        T value = _list->_data[_current].value();
         size_t parent = offset;
         do {
           if (parent == 0) {
-            _current = nullptr;
+            _current = std::numeric_limits<size_t>::max();
             return true;
           }
           parent = PARENT(parent);
         } while (_list->_data[parent].value() < value);
-        _current = &_list->_data[parent];
+        _current = parent;
         return true;
       }
       offset = RIGHT(offset);
@@ -168,38 +273,48 @@ public:
              _list->_data[LEFT(offset)].has_value()) {
         offset = LEFT(offset);
       }
-      _current = &_list->_data[offset];
+      _current = offset;
       return true;
     }
 
     // Moves the iterator to the previous item in the list. Returns whether the
     // iterator actually moved. Final item is the first item.
     bool prev() noexcept {
-      if (!_list || _index == 0 || _list->_size == 0)
+      if (!_list || _list->_size == 0 ||
+          (_current == std::numeric_limits<size_t>::max() && _list->_size == 0))
         return false;
-      _index--;
-      if (!_current) {
-        size_t index = 0;
-        while (RIGHT(index) < _list->_capacity &&
-               _list->_data[RIGHT(index)].has_value()) {
-          index = RIGHT(index);
+
+      {
+        size_t i = 0;
+        while (LEFT(i) < _list->_capacity &&
+               _list->_data[LEFT(i)].has_value()) {
+          i = LEFT(i);
         }
-        _current = &_list->_data[index];
+        if (_current == i)
+          return false;
+      }
+
+      if (_current == std::numeric_limits<size_t>::max()) {
+        _current = 0;
+        while (RIGHT(_current) < _list->_capacity &&
+               _list->_data[RIGHT(_current)].has_value()) {
+          _current = RIGHT(_current);
+        }
         return true;
       }
-      size_t offset = _current - _list->_data;
+      size_t offset = _current;
       if (LEFT(offset) >= _list->_capacity ||
           !_list->_data[LEFT(offset)].has_value()) {
-        T value = _current[0].value();
+        T value = _list->_data[_current].value();
         size_t parent = offset;
         do {
           if (parent == 0) {
-            _current = nullptr;
+            _current = std::numeric_limits<size_t>::max();
             return true;
           }
           parent = PARENT(parent);
         } while (_list->_data[parent].value() > value);
-        _current = &_list->_data[parent];
+        _current = parent;
         return true;
       }
       offset = LEFT(offset);
@@ -207,18 +322,18 @@ public:
              _list->_data[RIGHT(offset)].has_value()) {
         offset = RIGHT(offset);
       }
-      _current = &_list->_data[offset];
+      _current = offset;
       return true;
     }
 
-    // Returns the value at the iterator's current position. Throws a
+    // Returns the value by-value at the iterator's current position. Throws a
     // std::logic_error if called on the past-the-last item. If this behavior is
     // not desired, then use the get() method instead.
     T operator*() const {
-      const T *item = get();
-      return item ? *item
-                  : throw std::logic_error(
-                        "Tried to dereference past-the-last item");
+      std::optional<T> item = get();
+      return item.has_value() ? item.value()
+                              : throw std::logic_error(
+                                    "Tried to dereference past-the-last item");
     }
 
     // Tests if two iterators are identical.
@@ -243,10 +358,9 @@ public:
     operator=(const binary_tree_array_list<T>::iterator &right) {
       this->_list = right._list;
       this->_current = right._current;
-      this->_index = right._index;
       return *this;
     }
-  };
+  }; // class iterator
 
   // Creates an empty binary tree array list.
   binary_tree_array_list() noexcept
@@ -278,7 +392,10 @@ public:
     free(_height);
     _data = static_cast<std::optional<T> *>(
         malloc(_capacity * sizeof(std::optional<T>)));
-    _height = static_cast<uint8_t *>(malloc(_capacity * sizeof(uint8_t)));
+    for (size_t i = 0; i < _capacity; i++) {
+      _data[i] = std::optional<T>();
+    }
+    _height = static_cast<uint8_t *>(calloc(_capacity, sizeof(uint8_t)));
     _size = 0;
   }
 
@@ -308,103 +425,96 @@ public:
 
     _height[index] = 1;
     while (index > 0) {
-      _height[PARENT(index)] = std::max(
-          _height[PARENT(index)], static_cast<uint8_t>(_height[index] + 1));
       index = PARENT(index);
-      size_t x = index;
-
-      if (std::abs(_height[RIGHT(x)] - _height[LEFT(x)]) >= 2) {
-        uint8_t rotscore = 0;
-        size_t y;
-        if (_height[LEFT(x)] > _height[RIGHT(x)]) {
-          rotscore += 0;
-          y = LEFT(x);
-        } else {
-          rotscore += 1;
-          y = RIGHT(x);
-        }
-
-        size_t z;
-        if (_height[LEFT(y)] > _height[RIGHT(y)]) {
-          rotscore += 0;
-          z = LEFT(y);
-        } else {
-          rotscore += 2;
-          z = RIGHT(y);
-        }
-
-        switch (rotscore) {
-        // Rotate right
-        case 0:
-          std::swap(_data[x], _data[y]);
-          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
-          _data[RIGHT(x)] = std::move(_data[y]);
-          shift(RIGHT(y), 1);
-          shift(z, y - z);
-          break;
-
-        // Rotate right-left
-        case 1:
-          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
-          _data[LEFT(x)] = std::move(_data[x]);
-          _data[x] = std::move(_data[z]);
-          _data[z].reset();
-          _height[z] = 0;
-          shift(LEFT(z), RIGHT(LEFT(x)) - LEFT(z));
-          shift(RIGHT(z), z - RIGHT(z));
-          break;
-
-        // Rotate left-right
-        case 2:
-          shift(RIGHT(x), RIGHT(RIGHT(x)) - RIGHT(x));
-          _data[RIGHT(x)] = std::move(_data[x]);
-          _data[x] = std::move(_data[z]);
-          _data[z].reset();
-          _height[z] = 0;
-          shift(RIGHT(z), LEFT(RIGHT(x)) - RIGHT(z));
-          shift(LEFT(z), z - LEFT(z));
-          break;
-
-        // Rotate left
-        case 3:
-          std::swap(_data[x], _data[y]);
-          shift(LEFT(x), LEFT(LEFT(x)) - LEFT(x));
-          _data[LEFT(x)] = std::move(_data[y]);
-          shift(LEFT(y), -1);
-          shift(z, y - z);
-          break;
-        }
-        _height[LEFT(x)] =
-            std::max(_height[LEFT(LEFT(x))], _height[RIGHT(LEFT(x))]) + 1;
-        _height[RIGHT(x)] =
-            std::max(_height[LEFT(RIGHT(x))], _height[RIGHT(RIGHT(x))]) + 1;
-        _height[x] = std::max(_height[RIGHT(x)], _height[LEFT(x)]) + 1;
+      if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {
+        rebalance(index);
       }
+      _height[index] =
+          std::max(_height[LEFT(index)], _height[RIGHT(index)]) + 1;
     }
   }
 
-  // Returns a const pointer to the nth (0-indexed) item in the list. Unlike the
-  // [] operator, this method cannot throw an exception if index is too large.
-  const T *get(size_t index) const noexcept {
+  // Removes an item from the list, returning whether said item was in the list.
+  bool remove(const T &value) {
+    size_t index = 0;
+    while (index < _capacity && _data[index].has_value()) {
+      if (_data[index].value() == value) {
+        goto found;
+      }
+      index = value < _data[index] ? LEFT(index) : RIGHT(index);
+    }
+    return false;
+
+  found:
+    size_t next = RIGHT(index);
+    if (next >= _capacity || !_data[next].has_value()) {
+      _data[index].reset();
+    } else {
+      while (LEFT(next) < _capacity && _data[LEFT(next)].has_value()) {
+        next = LEFT(next);
+      }
+      _data[index] = std::move(_data[next]);
+      if (RIGHT(next) >= _capacity || !_data[RIGHT(next)].has_value()) {
+        _data[next].reset();
+      } else {
+        shift(RIGHT(next), next - RIGHT(next));
+      }
+    }
+
+    while (index > 0) {
+      index = PARENT(index);
+      if (std::abs(_height[RIGHT(index)] - _height[LEFT(index)]) >= 2) {
+        rebalance(index);
+      }
+      _height[index] =
+          std::max(_height[LEFT(index)], _height[RIGHT(index)]) + 1;
+    }
+
+    _size--;
+    return true;
+  }
+
+  // Checks if the list contains an item.
+  bool contains(const T &value) const noexcept {
+    size_t index = 0;
+    while (index < _capacity && _data[index].has_value()) {
+      if (value == _data[index].value())
+        return true;
+      index = value < _data[index].value() ? LEFT(index) : RIGHT(index);
+    }
+    return false;
+  }
+
+  // Returns an iterator starting at where the given value is, if the list
+  // contains that value. Otherwise, returns an iterator to the past-the-last
+  // item.
+  iterator find(const T &value) const noexcept {
+    return iterator::find(this, value);
+  }
+
+  // Returns an optional by-value to the nth (0-indexed) item in the list.
+  // Unlike the [] operator, this method cannot throw an exception if index is
+  // too large.
+  std::optional<T> get(size_t index) const noexcept {
     iterator iter = iterator(this);
     for (size_t i = 0; i < index; i++) {
       if (!iter.next())
-        return nullptr;
+        return std::nullopt;
     }
     return iter.get();
   }
 
-  // Returns a const reference to the nth (0-indexed) item in the list. If index
-  // is >= size(), then a std::logic_error is thrown. If this behavior is not
-  // desired, then use the get() method instead.
-  const T &operator[](size_t index) const {
+  // Returns by-value the nth (0-indexed) item in the list. If index is >=
+  // size(), then a std::logic_error is thrown. If this behavior is not desired,
+  // then use the get() method instead.
+  T operator[](size_t index) const {
     if (index >= _size)
       throw std::logic_error("Subscript out-of-bounds");
     iterator iter = iterator(this);
     for (size_t i = 0; i < index; i++) {
       iter.next();
     }
-    return *iter.get();
+    return iter.get().value();
   }
 
   // Creates an iterator pointing to the smallest item in the list.
@@ -425,7 +535,7 @@ public:
     deep_copy(right);
     return *this;
   }
-};
+}; // class binary_tree_array_list
 } // namespace imdast
 
-#endif // BINARY_TREE_ARRAY_LIST_H
+#endif // IMDAST_BINARY_TREE_ARRAY_LIST_H
